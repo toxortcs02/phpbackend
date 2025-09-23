@@ -3,8 +3,15 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
 use App\Models\User;
-use App\Config\Database;
+use App\Config\Database;    
 class UserController {
+
+    private $db;
+    
+    public function __construct(PDO $db) {
+        $this->db = $db;
+    }
+    
     public function login(Request $request, Response $response) {
         $data = $request->getParsedBody(); // obtiene JSON o form-data
 

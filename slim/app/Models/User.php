@@ -57,29 +57,35 @@ class User {
     public function loginUser($email, $password){
         $db = new Database();
         $conn = $db->getConnection();
-
+        // Buscar el usuario por email
         try{
             $query ="SELECT * FROM users  WHERE email  = :email";
             $statement = $conn->prepare($query);
             $statement->bindParam(':email', $email, PDO::PARAM_STR);
             $statement->execute();
-            $user = $statement->fetch();
+            $user = $statement->fetch(PDO::FETCH_ASSOC);
         }
         catch (PDOException $e) {
             throw new \Exception("Error in login: " . $e->getMessage());
         }
-            
+        
+        // Verificamos la contraseña
         if ($user && password_verify($password, $user['password'])) {
+            $token = bin2hex(random_bytes(32));
             $fecha = new DateTime();
             $fecha->modify('+5 minutes');
             $fechaFormateada = $fecha->format('Y-m-d H:i:s');
-            $query = "UPDATE * FROM users 
-                SET expired = ':fecha'
+            $query = "UPDATE users 
+                SET token = :token expired = ':fecha'
             WHERE email = :email ";
             $statement = $conn->prepare($query);
+            $statement->bindParam(':token', $token, PDO::PARAM_STR);
+            $statement->bindParam(':fecha', $fechaFormateada, PDO::PARAM_STR); 
             $statement->bindParam(':email', $email, PDO::PARAM_STR);
-            $statement->bindParam(':fecha', $fecha, PDO::PARAM_STR);
             $statement->execute();
+
+            $user['token'] = $token;
+            $user['expired'] = $fechaFormateada;
             return $user;
         }
     }
