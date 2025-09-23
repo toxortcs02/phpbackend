@@ -11,22 +11,47 @@ class UserController {
     public function __construct(PDO $db) {
         $this->db = $db;
     }
-    
+
     public function login(Request $request, Response $response) {
-        $data = $request->getParsedBody(); // obtiene JSON o form-data
-
-        $email = $data['email'] ?? '';
-        $password = $data['password'] ?? '';
-
-        $user = new User($this->db); // le pasás la conexión
-        $result = $user->loginUser($email, $password);
-
-        if ($result) {
-            $response->getBody()->write(json_encode($result));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
-        } else {
-            $response->getBody()->write(json_encode(["error" => "Credenciales inválidas"]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+        try {
+            $data = $request->getParsedBody();
+            
+            $email = $data['email'] ?? '';
+            $password = $data['password'] ?? '';
+            
+            if (empty($email) || empty($password)) {
+                $response->getBody()->write(json_encode([
+                    "error" => "Email y contraseña son requeridos"
+                ]));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            }
+            
+            $user = new User($this->db);
+            $result = $user->loginUser($email, $password);
+            
+            if ($result) {
+                unset($result['password']);
+                
+                $response->getBody()->write(json_encode([
+                    "message" => "Login exitoso",
+                    "user" => $result,
+                    "token" => $result['token']
+                ]));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+            } else {
+                $response->getBody()->write(json_encode([
+                    "error" => "Credenciales inválidas"
+                ]));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+            }
+            
+        } catch (\Exception $e) {
+            $response->getBody()->write(json_encode([
+                "error" => $e->getMessage()
+            ]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
         }
     }
+        
+    
 }
