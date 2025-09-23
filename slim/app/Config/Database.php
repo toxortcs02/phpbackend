@@ -1,11 +1,11 @@
 <?php
-namespace Docker\Slim\App\Config;
+namespace App\Config;
 
 use PDO;
 use PDOException;
 
 class Database{
-    private $host = 'localhost';
+    private $host = 'db';
     private $db_name = 'seminariophp';
     private $username = 'seminariophp';
     private $password = 'seminariophp';             
