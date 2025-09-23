@@ -21,9 +21,8 @@ class User {
     public $expired;
     public $is_admin;
 
-    public function __construct() {
-        $database = new Database();
-        $this->conn = $database->getConnection();
+    public function __construct(PDO $db) {
+        $this->conn = $db;
     }
 
     public function create() {
