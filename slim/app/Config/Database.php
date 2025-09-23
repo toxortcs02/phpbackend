@@ -5,6 +5,8 @@ use PDO;
 use PDOException;
 
 class Database{
+
+    private static $connection;
     private $host = 'db';
     private $db_name = 'seminariophp';
     private $username = 'seminariophp';

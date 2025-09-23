@@ -26,7 +26,7 @@ class User {
         $this->conn = $database->getConnection();
     }
 
-        public function create() {
+    public function create() {
         try {
             $query = "INSERT INTO {$this->table} 
                      (email, first_name, last_name, password, is_admin) 
@@ -51,6 +51,37 @@ class User {
             
         } catch (PDOException $e) {
             throw new \Exception("Error creating user: " . $e->getMessage());
+        }
+    }
+
+
+    public function loginUser($email, $password){
+        $db = new Database();
+        $conn = $db->getConnection();
+
+        try{
+            $query ="SELECT * FROM users  WHERE email  = :email";
+            $statement = $conn->prepare($query);
+            $statement->bindParam(':email', $email, PDO::PARAM_STR);
+            $statement->execute();
+            $user = $statement->fetch();
+        }
+        catch (PDOException $e) {
+            throw new \Exception("Error in login: " . $e->getMessage());
+        }
+            
+        if ($user && password_verify($password, $user['password'])) {
+            $fecha = new DateTime();
+            $fecha->modify('+5 minutes');
+            $fechaFormateada = $fecha->format('Y-m-d H:i:s');
+            $query = "UPDATE * FROM users 
+                SET expired = ':fecha'
+            WHERE email = :email ";
+            $statement = $conn->prepare($query);
+            $statement->bindParam(':email', $email, PDO::PARAM_STR);
+            $statement->bindParam(':fecha', $fecha, PDO::PARAM_STR);
+            $statement->execute();
+            return $user;
         }
     }
 }
