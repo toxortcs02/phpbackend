@@ -53,3 +53,4 @@ class User {
             throw new \Exception("Error creating user: " . $e->getMessage());
         }
     }
+}
