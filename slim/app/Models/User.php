@@ -21,12 +21,11 @@ class User {
     public $expired;
     public $is_admin;
 
-    public function __construct() {
-        $database = new Database();
-        $this->conn = $database->getConnection();
+    public function __construct(PDO $db) {
+        $this->conn = $db;
     }
 
-        public function create() {
+    public function create() {
         try {
             $query = "INSERT INTO {$this->table} 
                      (email, first_name, last_name, password, is_admin) 
@@ -34,13 +33,12 @@ class User {
             
             $stmt = $this->conn->prepare($query);
             
-            // Hash password
-            $hashed_password = password_hash($this->password, PASSWORD_DEFAULT);
+
             
             $stmt->bindParam(':email', $this->email);
             $stmt->bindParam(':first_name', $this->first_name);
             $stmt->bindParam(':last_name', $this->last_name);
-            $stmt->bindParam(':password', $hashed_password);
+            $stmt->bindParam(':password', $this->password);
             $stmt->bindParam(':is_admin', $this->is_admin);
             
             if ($stmt->execute()) {
@@ -53,4 +51,51 @@ class User {
             throw new \Exception("Error creating user: " . $e->getMessage());
         }
     }
+
+
+    public function loginUser($email, $password) {
+        try {
+            $query = "SELECT * FROM users WHERE email = :email";
+            $statement = $this->conn->prepare($query);
+            $statement->bindParam(':email', $email, PDO::PARAM_STR);
+            $statement->execute();
+            $user = $statement->fetch(PDO::FETCH_ASSOC);
+            if ($user && $password === $user['password']) {
+                
+                $token = bin2hex(random_bytes(32));
+                
+                $fecha = new DateTime();
+                $fecha->modify('+5 minutes');
+                $fechaFormateada = $fecha->format('Y-m-d H:i:s');
+                
+                $updateQuery = "UPDATE users 
+                            SET token = :token, expired = :expired 
+                            WHERE email = :email";
+                
+                $updateStmt = $this->conn->prepare($updateQuery);
+                
+                
+                $updateStmt->bindParam(':token', $token, PDO::PARAM_STR);
+                $updateStmt->bindParam(':expired', $fechaFormateada, PDO::PARAM_STR);  
+                $updateStmt->bindParam(':email', $email, PDO::PARAM_STR);
+                
+                if ($updateStmt->execute()) {
+                    $user['token'] = $token;
+                    $user['expired'] = $fechaFormateada;
+                    
+                    return $user;
+                } else {
+                    throw new \Exception("Error al actualizar token de usuario");
+                }
+            }
+            return false;
+            
+        } catch (PDOException $e) {
+            error_log("SQL Error: " . $e->getMessage());
+            error_log("Query: " . ($updateQuery ?? 'Query no definida'));
+            
+            throw new \Exception("Error en login: " . $e->getMessage());
+        }
+    }
+    
 }
