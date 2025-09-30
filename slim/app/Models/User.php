@@ -34,29 +34,38 @@ class User {
     public function create() {
         try {
             $query = "INSERT INTO {$this->table} 
-                     (email, first_name, last_name, password, is_admin) 
-                     VALUES (:email, :first_name, :last_name, :password, :is_admin)";
+                    (email, first_name, last_name, password, is_admin) 
+                    VALUES (:email, :first_name, :last_name, :password, :is_admin)";
             
             $stmt = $this->conn->prepare($query);
-            
 
-            
-            $stmt->bindParam(':email', $this->email);
-            $stmt->bindParam(':first_name', $this->first_name);
-            $stmt->bindParam(':last_name', $this->last_name);
-            $stmt->bindParam(':password', $this->password);
-            $stmt->bindParam(':is_admin', $this->is_admin);
-            
+            $stmt->bindParam(':email', $this->email, PDO::PARAM_STR);
+            $stmt->bindParam(':first_name', $this->first_name, PDO::PARAM_STR);
+            $stmt->bindParam(':last_name', $this->last_name, PDO::PARAM_STR);
+            $stmt->bindParam(':password', $this->password, PDO::PARAM_STR);
+            $stmt->bindParam(':is_admin', $this->is_admin, PDO::PARAM_INT);
+
             if ($stmt->execute()) {
                 $this->id = $this->conn->lastInsertId();
-                return true;
+                return $this->id;
             }
             return false;
-            
+
         } catch (PDOException $e) {
-            throw new \Exception("Error creating user: " . $e->getMessage());
+            throw new \Exception("Error creando usuario: " . $e->getMessage());
         }
     }
+
+    public function registerUser($email, $password, $first_name, $last_name, $is_admin = 0) {
+        $this->email = $email;
+        $this->password = $password;
+        $this->first_name = $first_name;
+        $this->last_name = $last_name;
+        $this->is_admin = $is_admin;
+
+        return $this->create();
+    }
+
 
 
     public function loginUser($email, $password) {
