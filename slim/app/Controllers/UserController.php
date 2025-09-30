@@ -28,6 +28,14 @@ class UserController {
                     return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
                 }
                 $user = new User($this->db);
+
+                if ($user->findByEmail($email)) {
+                    $response->getBody()->write(json_encode([
+                        "error" => "El email ya está registrado"
+                    ]));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
+                }
+                
                 $result = $user->register($email, $password, $first, $last);
 
             }
