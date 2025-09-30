@@ -1,6 +1,6 @@
-<?php 
+<?php
 
-namespace Docker\Slim\App\Middleware;
+namespace App\Middleware;
 
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -19,7 +19,10 @@ class AuthMiddleware {
 
         if (!$authHeader || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
             $response = new \Slim\Psr7\Response();
-            $response->getBody()->write(json_encode(['error' => 'Token missing']));
+            $response->getBody()->write(json_encode([
+                'error' => 'Token de autorización requerido',
+                'code' => 'AUTH_REQUIRED'
+            ]));
             return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
         }
 
@@ -32,14 +35,20 @@ class AuthMiddleware {
 
         if (!$user) {
             $response = new \Slim\Psr7\Response();
-            $response->getBody()->write(json_encode(['error' => 'Invalid token']));
+            $response->getBody()->write(json_encode([
+                'error' => 'Token inválido',
+                'code' => 'INVALID_TOKEN'
+            ]));
             return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
         }
 
         // Verificar expiración
         if (strtotime($user['expired']) < time()) {
             $response = new \Slim\Psr7\Response();
-            $response->getBody()->write(json_encode(['error' => 'Token expired']));
+            $response->getBody()->write(json_encode([
+                'error' => 'Token expirado',
+                'code' => 'TOKEN_EXPIRED'
+            ]));
             return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
         }
 
@@ -50,6 +59,8 @@ class AuthMiddleware {
 
         // Guardar info del usuario en request para usar en controladores
         $request = $request->withAttribute('user', $user);
+        $request = $request->withAttribute('user_id', $user['id']);
+        $request = $request->withAttribute('is_admin', $user['is_admin']);
 
         return $handler->handle($request);
     }

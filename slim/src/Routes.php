@@ -6,6 +6,9 @@ use App\Controllers\UserController;
 use App\Config\Database;
 
 
+
+
+
 return function (App $app) {
 
     $database = new Database();
@@ -77,7 +80,22 @@ return function (App $app) {
     }); 
     // Ruta para registro de usuario
     $app->post('/api/users/register', [$userController, 'register']);
-    
+    $app->post('/api/users/register', function (Request $request, Response $response) {
+            try{
+                $database = new Database();
+                $db = $database->getConnection();
+
+                $userController = new UserController($db);
+                return $userController->register($request, $response);
+            }
+             catch (Exception $e) {
+            $error = ["error" => $e->getMessage()];
+            $response->getBody()->write(json_encode($error));
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(500);
+        }
+    });
     // Ruta para login
 
     

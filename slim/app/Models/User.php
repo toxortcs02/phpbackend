@@ -25,6 +25,12 @@ class User {
         $this->conn = $db;
     }
 
+    public function findByEmail($email) {
+        $stmt = $this->conn->prepare("SELECT * FROM users WHERE email = :email");
+        $stmt->bindParam(':email', $email);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
     public function create() {
         try {
             $query = "INSERT INTO {$this->table} 

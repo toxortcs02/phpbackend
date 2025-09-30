@@ -14,7 +14,43 @@ class UserController {
     public function __construct(PDO $db) {
         $this->db = $db;
     }
+    public function register(Request $request, Response $response) {
+            try {
+                $data = $request->getParsedBody();
+                $email = $data['email'] ?? '';
+                $password = $data['password'] ?? '';
+                $first = $data['first_name'] ?? '';
+                $last = $data['last_name'] ?? '';
+                if (empty($email) || empty($password) || empty($first) || empty($last)) {
+                    $response->getBody()->write(json_encode([
+                        "error" => "Todos los campos son requeridos"
+                    ]));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+                }
+                $user = new User($this->db);
+                $result = $user->register($email, $password, $first, $last);
 
+            }
+            catch (\Exception $e) {
+                $response->getBody()->write(json_encode([
+                    "error" => $e->getMessage()
+                ]));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+            }
+            if ($result) {
+                $response->getBody()->write(json_encode([
+                    "message" => "Usuario registrado exitosamente",
+                    "user_id" => $result
+                ]));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
+            } else {
+                $response->getBody()->write(json_encode([
+                    "error" => "No se pudo registrar el usuario"
+                ]));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            }
+
+    }
     public function login(Request $request, Response $response) {
         try {
             $data = $request->getParsedBody();
