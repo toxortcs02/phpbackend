@@ -35,13 +35,13 @@ return function (App $app) {
     - first_name
     - last_name
 */
-    $app->post('/api/users/register', [$userController, 'register']);
+    $app->post('/api/users', [$userController, 'register']);
     // Login
     $app->post('/api/users/login', [$userController, 'login']);
 
     $app->get('/api/users', [$userController, 'getAll']);
 
-
+    
 
 
 

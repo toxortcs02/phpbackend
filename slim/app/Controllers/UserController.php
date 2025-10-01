@@ -15,6 +15,39 @@ class UserController {
     public function __construct(PDO $db) {
         $this->db = $db;
     }
+
+    function validarPassword($password) {
+    // Longitud mínima
+    if (strlen($password) < 8) {
+        return false;
+    }
+
+    // Bandas de control
+    $tieneMayus = false;
+    $tieneMinus = false;
+    $tieneNumero = false;
+    $tieneEspecial = false;
+    $caracteresEspeciales = "@$!%*?&"; // podés ampliar la lista
+
+    for ($i = 0; $i < strlen($password); $i++) {
+        $char = $password[$i];
+
+        if (ctype_upper($char)) {
+            $tieneMayus = true;
+        } elseif (ctype_lower($char)) {
+            $tieneMinus = true;
+        } elseif (ctype_digit($char)) {
+            $tieneNumero = true;
+        } elseif (strpos($caracteresEspeciales, $char) !== false) {
+            $tieneEspecial = true;
+        }
+    }
+
+    return $tieneMayus && $tieneMinus && $tieneNumero && $tieneEspecial;
+    }
+
+
+
     public function register(Request $request, Response $response) {
             try {
                 $data = $request->getParsedBody();
@@ -22,12 +55,14 @@ class UserController {
                 $password = $data['password'] ?? '';
                 $first = $data['first_name'] ?? '';
                 $last = $data['last_name'] ?? '';
+                
                 if (empty($email) || empty($password) || empty($first) || empty($last)) {
                     $response->getBody()->write(json_encode([
                         "error" => "Todos los campos son requeridos"
                     ]));
                     return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
                 }
+
                 $user = new User($this->db);
 
                 if ($user->findByEmail($email)) {
@@ -35,6 +70,14 @@ class UserController {
                         "error" => "El email ya está registrado"
                     ]));
                     return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
+                }
+
+
+                if (!$this->validarPassword($password)) {
+                    $response->getBody()->write(json_encode([
+                        "error" => "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&)"
+                    ]));
+                    return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
                 }
                 
                 $result = $user->registerUser($email, $password, $first, $last);
