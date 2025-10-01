@@ -41,7 +41,7 @@ return function (App $app) {
 
     $app->get('/api/users', [$userController, 'getAll']);
 
-    
+
 
 
 
@@ -52,7 +52,7 @@ $app->group('/api/users', function ($group) use ($userController) {
         $group->get('/profile', [$userController, 'getProfile']);
         
         // Actualizar perfil del usuario autenticado
-        $group->put('/profile', [$userController, 'updateProfile']);
+        $group->put('/profile/{id}', [$userController, 'updateProfile']);
         
         // Logout
         $group->post('/logout', [$userController, 'logout']);

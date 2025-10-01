@@ -55,7 +55,7 @@ class UserController {
                 $password = $data['password'] ?? '';
                 $first = $data['first_name'] ?? '';
                 $last = $data['last_name'] ?? '';
-                
+
                 if (empty($email) || empty($password) || empty($first) || empty($last)) {
                     $response->getBody()->write(json_encode([
                         "error" => "Todos los campos son requeridos"
@@ -104,6 +104,70 @@ class UserController {
 
     }
 
+
+    public function updateProfile(Request $request, Response $response, array $args): Response {
+        try {
+            $userId = $args['id'];
+            $data = $request->getParsedBody();
+            if (($userId != $request->getAttribute('user_id')) OR (!$request->getAttribute('is_admin'))) {
+                $response->getBody()->write(json_encode([
+                    "error" => "No autorizado para actualizar este perfil"
+                ]));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+            }
+            
+
+            $firstName = $data['first_name'] ?? null;
+            $lastName = $data['last_name'] ?? null;
+            $password = $data['password'] ?? null;
+
+            if ($password && !$this->validarPassword($password)) {
+                $response->getBody()->write(json_encode([
+                    "error" => "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&)"
+                ]));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            }
+
+            $fields = [];
+            $params = ['id' => $userId];
+
+            if ($firstName) {
+                $fields[] = 'first_name = :first_name';
+                $params['first_name'] = $firstName;
+            }
+            if ($lastName) {
+                $fields[] = 'last_name = :last_name';
+                $params['last_name'] = $lastName;
+            }
+            if ($password) {
+                $fields[] = 'password = :password';
+                $params['password'] = $password;
+            }
+
+            if (empty($fields)) {
+                $response->getBody()->write(json_encode([
+                    "error" => "No se proporcionaron campos para actualizar"
+                ]));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+            }
+
+            $sql = "UPDATE users SET " . implode(', ', $fields) . " WHERE id = :id";
+            $stmt = $this->db->prepare($sql);
+            foreach ($params as $key => &$val) {
+                $stmt->bindParam(':' . $key, $val);
+            }
+            $stmt->execute();
+
+            $response->getBody()->write(json_encode([
+                "message" => "Perfil actualizado exitosamente"
+            ]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+
+        } catch (PDOException $e) {
+            $response->getBody()->write(json_encode([
+                "error" => "Error al actualizar el perfil: " . $e->getMessage()
+            ]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500
 
     public function login(Request $request, Response $response) {
         try {
