@@ -31,6 +31,12 @@ class User {
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+    public function findByToken($token) {
+        $stmt = $this->conn->prepare("SELECT * FROM users WHERE token = :token");
+        $stmt->bindParam(':email', $token);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
     public function create() {
         try {
             $query = "INSERT INTO {$this->table} 
