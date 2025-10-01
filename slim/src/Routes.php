@@ -79,7 +79,13 @@ return function (App $app) {
         }
     }); 
     // Ruta para registro de usuario
-    $app->post('/api/users/register', [$userController, 'register']);
+    /*
+    La ruta de registro crea un nuevo usuario. Espera un JSON en el cuerpo de la solicitud con los campos:
+    - email
+    - password
+    - first_name
+    - last_name
+    */
     $app->post('/api/users/register', function (Request $request, Response $response) {
             try{
                 $database = new Database();

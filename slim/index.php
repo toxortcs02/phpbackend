@@ -12,7 +12,7 @@ $app = AppFactory::create();
 $app->addBodyParsingMiddleware();
 $app->addRoutingMiddleware();
 $app->addErrorMiddleware(true, true, true);
-date_timezone_set('America/Argentina/Buenos_Aires');
+date_default_timezone_set('America/Argentina/Buenos_Aires');
 $app->add(function ($request, $handler) {
     $response = $handler->handle($request);
 

@@ -36,7 +36,7 @@ class UserController {
                     return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
                 }
                 
-                $result = $user->register($email, $password, $first, $last);
+                $result = $user->registerUser($email, $password, $first, $last);
 
             }
             catch (\Exception $e) {

@@ -80,7 +80,6 @@ class User {
                 $token = bin2hex(random_bytes(32));
                 
                 $fecha = new DateTime();
-                $fecha->setTimezone(new \DateTimeZone('America/Argentina/Buenos_Aires'));
                 $fecha->modify('+5 minutes');
                 $fechaFormateada = $fecha->format('Y-m-d H:i:s');
                 
