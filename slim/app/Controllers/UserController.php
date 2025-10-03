@@ -167,7 +167,9 @@ class UserController {
             $response->getBody()->write(json_encode([
                 "error" => "Error al actualizar el perfil: " . $e->getMessage()
             ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(500
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+        }
+    }
 
     public function login(Request $request, Response $response) {
         try {
