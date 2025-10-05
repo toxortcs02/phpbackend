@@ -15,7 +15,11 @@ return function (App $app) {
 
     $database = new Database();
     $connection = $database->getConnection();
+
     $userController = new UserController($connection);
+    $courtControler = new CourtController($connection);
+
+
     $authMiddleware = new AuthMiddleware($connection);
     $adminMiddleware = new IsAdminMiddleware();
 
@@ -38,7 +42,7 @@ return function (App $app) {
     $app->post('/api/users', [$userController, 'register']);
     // Login
     $app->post('/api/users/login', [$userController, 'login']);
-
+    // Listado de usuarios
     $app->get('/api/users', [$userController, 'getAll']);
 
 
@@ -52,7 +56,7 @@ $app->group('/api/users', function ($group) use ($userController) {
         $group->get('/profile', [$userController, 'getProfile']);
         
         // Actualizar perfil del usuario autenticado
-        $group->put('/profile/{id}', [$userController, 'updateProfile']);
+        $group->patch('/profile/{id}', [$userController, 'updateProfile']);
         
         // Logout
         $group->post('/logout', [$userController, 'logout']);
@@ -60,8 +64,21 @@ $app->group('/api/users', function ($group) use ($userController) {
         
     })->add($authMiddleware);
     
+$app->group('/api', function ($group) use ($courtControler) {
+        
+        // Crear una nueva cancha
+        $group->post('/court', [$courtControler, 'createCourt']);
+        
+        // Actualizar una cancha existente
+        $group->put('/court/{id}', [$courtControler, 'updateCourt']);
+        
+        // borrar una cancha
+        $group->delete('/court/{id}', [$courtControler, 'deleteCourt']);
 
-
-
+        // obtener la informacion de una cancha
+        $group->get('/court/{id}', [$courtControler, 'getCourt']);
+        
+        
+    })->add($authMiddleware)->add($adminMiddleware);
 
 };

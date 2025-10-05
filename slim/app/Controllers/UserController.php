@@ -17,17 +17,15 @@ class UserController {
     }
 
     function validarPassword($password) {
-    // Longitud mínima
     if (strlen($password) < 8) {
         return false;
     }
 
-    // Bandas de control
     $tieneMayus = false;
     $tieneMinus = false;
     $tieneNumero = false;
     $tieneEspecial = false;
-    $caracteresEspeciales = "@$!%*?&"; // podés ampliar la lista
+    $caracteresEspeciales = "@$!%*?&"; 
 
     for ($i = 0; $i < strlen($password); $i++) {
         $char = $password[$i];
@@ -109,7 +107,10 @@ class UserController {
         try {
             $userId = $args['id'];
             $data = $request->getParsedBody();
-            if (($userId != $request->getAttribute('user_id')) OR (!$request->getAttribute('is_admin'))) {
+            $isOwner = ($userId == $request->getAttribute('user_id'));
+            $isAdmin = $request->getAttribute('is_admin');
+
+            if (!$isOwner && !$isAdmin) {
                 $response->getBody()->write(json_encode([
                     "error" => "No autorizado para actualizar este perfil"
                 ]));
