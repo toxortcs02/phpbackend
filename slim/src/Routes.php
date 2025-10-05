@@ -74,11 +74,9 @@ $app->group('/api', function ($group) use ($courtControler) {
         
         // borrar una cancha
         $group->delete('/court/{id}', [$courtControler, 'deleteCourt']);
-
-        // obtener la informacion de una cancha
-        $group->get('/court/{id}', [$courtControler, 'getCourt']);
         
         
     })->add($authMiddleware)->add($adminMiddleware);
 
+    $app->get('/api/court/{id}', [$courtControler, 'getCourt']);
 };
