@@ -118,5 +118,60 @@ class User {
             throw new \Exception("Error en login: " . $e->getMessage());
         }
     }
+
+    public function logout($token) {
+        // Verificar token
+        $stmt = $this->conn->prepare("SELECT expired FROM users WHERE token = :token");
+        $stmt->execute(['token' => $token]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$user) {
+            return ['success' => false, 'error' => 'Token no encontrado', 'status' => 401];
+        }
+
+        if (strtotime($user['expired']) < time()) {
+            return ['success' => false, 'error' => 'Token vencido', 'status' => 401];
+        }
+
+        // Invalidar token
+        $stmt = $this->conn->prepare("UPDATE users SET token = NULL, expired = NULL WHERE token = :token");
+        $stmt->execute(['token' => $token]);
+
+        return ['success' => true];
+    }
+
+
+    public function updateProfile($userId, $firstName, $lastName, $password) {
+    $fields = [];
+    $params = ['id' => $userId];
+
+    if ($firstName) {
+        $fields[] = 'first_name = :first_name';
+        $params['first_name'] = $firstName;
+    }
+    if ($lastName) {
+        $fields[] = 'last_name = :last_name';
+        $params['last_name'] = $lastName;
+    }
+    if ($password) {
+        $fields[] = 'password = :password';
+        $params['password'] = password_hash($password, PASSWORD_DEFAULT);
+    }
+
+    if (empty($fields)) {
+        return false;
+    }
+
+    $sql = "UPDATE users SET " . implode(', ', $fields) . " WHERE id = :id";
+    $stmt = $this->conn->prepare($sql);
+    
+    return $stmt->execute($params);
+}
+
+    public function getAll() {
+        $stmt = $this->conn->query("SELECT id, email, first_name, last_name, is_admin FROM users");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     
 }

@@ -6,7 +6,7 @@ use App\Controllers\UserController;
 use App\Config\Database;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\IsAdminMiddleware;
-
+use App\Controllers\CourtController;
 
 
 
@@ -64,19 +64,19 @@ $app->group('/api/users', function ($group) use ($userController) {
         
     })->add($authMiddleware);
     
-$app->group('/api', function ($group) use ($courtControler) {
-        
-        // Crear una nueva cancha
-        $group->post('/court', [$courtControler, 'createCourt']);
-        
-        // Actualizar una cancha existente
-        $group->put('/court/{id}', [$courtControler, 'updateCourt']);
-        
-        // borrar una cancha
-        $group->delete('/court/{id}', [$courtControler, 'deleteCourt']);
-        
-        
-    })->add($authMiddleware)->add($adminMiddleware);
+$app->group('/api', function ($group) use ($courtControler, $authMiddleware, $adminMiddleware) {
+    
+    // Rutas que requieren ser administrador
+    $group->group('', function ($adminGroup) use ($courtControler) {
+        $adminGroup->post('/court', [$courtControler, 'createCourt']);
+        $adminGroup->put('/court/{id}', [$courtControler, 'updateCourt']);
+        $adminGroup->delete('/court/{id}', [$courtControler, 'deleteCourt']);
+    })->add($adminMiddleware)->add($authMiddleware);
+    
+    // Ruta que solo requiere autenticación
+    $group->get('/court/{id}', [$courtControler, 'getCourt'])
+          ->add($authMiddleware);
+    
+});
 
-    $app->get('/api/court/{id}', [$courtControler, 'getCourt']);
 };
