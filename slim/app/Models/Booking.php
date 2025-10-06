@@ -44,7 +44,6 @@ class Booking {
         }
     }
 
-    pulic function 
 
     // Verificar si una cancha está disponible en un horario
     public function isCourtAvailable($courtId, $startDatetime, $durationBlocks) {
