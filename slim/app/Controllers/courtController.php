@@ -20,7 +20,7 @@ class CourtController {
         return $response->withHeader('Content-Type', 'application/json')->withStatus($status);
     }
 
-    public function create(Request $request, Response $response) {
+    public function createCourt(Request $request, Response $response) {
         try {
             $data = $request->getParsedBody();
             $name = $data['name'] ?? '';

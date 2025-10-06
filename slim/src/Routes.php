@@ -18,7 +18,7 @@ return function (App $app) {
 
     $userController = new UserController($connection);
     $courtControler = new CourtController($connection);
-
+    $bookingController = new BookingController($connection);
 
     $authMiddleware = new AuthMiddleware($connection);
     $adminMiddleware = new IsAdminMiddleware();
@@ -44,8 +44,16 @@ return function (App $app) {
     $app->post('/api/login', [$userController, 'login']);
     // Listado de usuarios
     $app->get('/api/users', [$userController, 'getAll']);
+    
 
+    // POST /booking - Crear reserva (usuario autenticado)
+    $app->post('/booking', [$bookingController, 'create'])->add($authMiddleware);
 
+    // DELETE /booking/{id} - Eliminar reserva (creador o admin)
+    $app->delete('/booking/{id}', [$bookingController, 'delete'])->add($authMiddleware);
+
+    // GET /booking?date={date} - Ver reservas del día (público)
+    $app->get('/booking', [$bookingController, 'list']);
 
 
 

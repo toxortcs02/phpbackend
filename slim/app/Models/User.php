@@ -178,5 +178,15 @@ class User {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function getUserBookings($userId) {
+        $stmt = $this->conn->prepare("SELECT b.*, c.name as court_name
+                                            FROM bookings b
+                                            INNER JOIN booking_participants bp ON b.id = bp.booking_id
+                                            INNER JOIN courts c ON b.court_id = c.id
+                                            WHERE bp.user_id = :user_id");
+        $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
     
 }
