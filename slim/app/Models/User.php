@@ -72,8 +72,6 @@ class User {
         return $this->create();
     }
 
-
-
     public function loginUser($email, $password) {
         try {
             $query = "SELECT * FROM users WHERE email = :email";
@@ -141,32 +139,39 @@ class User {
     }
 
 
-    public function updateProfile($userId, $firstName, $lastName, $password) {
-    $fields = [];
-    $params = ['id' => $userId];
+    public function updateUser($userId, $firstName, $lastName, $password) {
+        $fields = [];
+        $params = ['id' => $userId];
 
-    if ($firstName) {
-        $fields[] = 'first_name = :first_name';
-        $params['first_name'] = $firstName;
-    }
-    if ($lastName) {
-        $fields[] = 'last_name = :last_name';
-        $params['last_name'] = $lastName;
-    }
-    if ($password) {
-        $fields[] = 'password = :password';
-        $params['password'] = password_hash($password, PASSWORD_DEFAULT);
+        if ($firstName) {
+            $fields[] = 'first_name = :first_name';
+            $params['first_name'] = $firstName;
+        }
+        if ($lastName) {
+            $fields[] = 'last_name = :last_name';
+            $params['last_name'] = $lastName;
+        }
+        if ($password) {
+            $fields[] = 'password = :password';
+            $params['password'] = password_hash($password, PASSWORD_DEFAULT);
+        }
+
+        if (empty($fields)) {
+            return false;
+        }
+
+        $sql = "UPDATE users SET " . implode(', ', $fields) . " WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        
+        return $stmt->execute($params);
     }
 
-    if (empty($fields)) {
-        return false;
+    public function getUser($id) {
+        $stmt = $this->conn->prepare("SELECT id, email, first_name, last_name, is_admin FROM users WHERE id = :id");
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
-    $sql = "UPDATE users SET " . implode(', ', $fields) . " WHERE id = :id";
-    $stmt = $this->conn->prepare($sql);
-    
-    return $stmt->execute($params);
-}
 
     public function getAll() {
         $stmt = $this->conn->query("SELECT id, email, first_name, last_name, is_admin FROM users");

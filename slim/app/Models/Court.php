@@ -77,23 +77,33 @@ class Court {
         }
     }
 
-    public function editCourt($id) {
-        try {
-            $query = "UPDATE {$this->table} 
-                    SET name = :name, description = :description
-                    WHERE id = :id";
-            
-            $stmt = $this->conn->prepare($query);
-
-            $stmt->bindParam(':name', $this->name, PDO::PARAM_STR);
-            $stmt->bindParam(':description', $this->description, PDO::PARAM_STR);
-            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-
-            return $stmt->execute();
-
-        } catch (PDOException $e) {
-            echo "Error: " . $e->getMessage();
+    public function editCourt($courtId, $courtName, $courtDescription) {
+    try {
+        $fields = [];
+        $params = ['id' => $courtId];
+        
+        if ($courtName) {
+            $fields[] = 'name = :name';  
+            $params['name'] = $courtName;
+        }
+        
+        if ($courtDescription) {
+            $fields[] = 'description = :description'; 
+            $params['description'] = $courtDescription;
+        }
+        
+        if (empty($fields)) {
             return false;
         }
+        
+        $sql = "UPDATE courts SET " . implode(', ', $fields) . " WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $result = $stmt->execute($params);
+        return $result && $stmt->rowCount() > 0;
+        
+    } catch (PDOException $e) {
+        error_log("Error al actualizar cancha: " . $e->getMessage());
+        return false;
     }
+}
 }

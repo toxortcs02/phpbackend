@@ -41,7 +41,7 @@ return function (App $app) {
 */
     $app->post('/api/users', [$userController, 'register']);
     // Login
-    $app->post('/api/users/login', [$userController, 'login']);
+    $app->post('/api/login', [$userController, 'login']);
     // Listado de usuarios
     $app->get('/api/users', [$userController, 'getAll']);
 
@@ -50,13 +50,13 @@ return function (App $app) {
 
 
     
-$app->group('/api/users', function ($group) use ($userController) {
+$app->group('/api', function ($group) use ($userController) {
         
         // Obtener perfil del usuario autenticado
-        $group->get('/profile', [$userController, 'getProfile']);
+        $group->get('/user/{id}', [$userController, 'getUser']);
         
         // Actualizar perfil del usuario autenticado
-        $group->patch('/profile/{id}', [$userController, 'updateProfile']);
+        $group->patch('/user/{id}', [$userController, 'updateUser']);
         
         // Logout
         $group->post('/logout', [$userController, 'logout']);

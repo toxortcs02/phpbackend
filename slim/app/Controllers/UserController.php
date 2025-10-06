@@ -27,7 +27,7 @@ class UserController {
 
         return $tieneMayus && $tieneMinus && $tieneNumero && $tieneEspecial;
     }
-    // Helper para respuestas JSON
+
     private function jsonResponse(Response $response, array $data, int $status): Response {
         $response->getBody()->write(json_encode($data));
         return $response->withHeader('Content-Type', 'application/json')->withStatus($status);
@@ -81,7 +81,75 @@ class UserController {
         }
     }
 
-    public function updateProfile(Request $request, Response $response, array $args): Response {
+    public function login(Request $request, Response $response) {
+        try {
+            $data = $request->getParsedBody();
+            
+            $email = $data['email'] ?? '';
+            $password = $data['password'] ?? '';
+            
+            if (empty($email) || empty($password)) {
+                return $this->jsonResponse($response, [
+                    "error" => "Email y contraseña son requeridos"
+                ], 400);
+            }
+            
+            $user = new User($this->db);
+            $result = $user->loginUser($email, $password);
+            
+            if ($result) {
+                unset($result['password']);
+                
+                return $this->jsonResponse($response, [
+                    "message" => "Login exitoso",
+                    "user" => $result,
+                    "token" => $result['token']
+                ], 200);
+            } else {
+                return $this->jsonResponse($response, [
+                    "error" => "Credenciales inválidas"
+                ], 401);
+            }
+            
+        } catch (\Exception $e) {
+            return $this->jsonResponse($response, [
+                "error" => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getUser(Request $request, Response $response, array $args): Response {
+        try {
+            $userId = $args['id'];
+            $requestingUserId = $request->getAttribute('user_id');
+            $isAdmin = $request->getAttribute('is_admin');
+
+            if ($userId != $requestingUserId && !$isAdmin) {
+                return $this->jsonResponse($response, [
+                    "error" => "No autorizado para ver este perfil"
+                ], 403);
+            }
+
+
+            $user = new User($this->db);
+            $userData = $user->getById($userId);
+
+            if ($userData) {
+                return $this->jsonResponse($response, $userData, 200);
+            } else {
+                return $this->jsonResponse($response, [
+                    "error" => "Usuario no encontrado"
+                ], 404);
+            }
+
+        } catch (PDOException $e) {
+            return $this->jsonResponse($response, [
+                "error" => "Error al obtener el perfil: " . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateUser(Request $request, Response $response, array $args): Response {
         try {
             $userId = $args['id'];
             $data = $request->getParsedBody();
@@ -110,9 +178,9 @@ class UserController {
                 ], 400);
             }
 
-            // ✅ CORRECTO: Delegar al modelo
+
             $user = new User($this->db);
-            $updated = $user->updateProfile($userId, $firstName, $lastName, $password);
+            $updated = $user->updateUser($userId, $firstName, $lastName, $password);
 
             if ($updated) {
                 return $this->jsonResponse($response, [
@@ -146,7 +214,7 @@ class UserController {
                 ], 401);
             }
 
-            // ✅ CORRECTO: Usar el modelo
+
             $user = new User($this->db);
             $result = $user->logout($token);
 
@@ -169,7 +237,7 @@ class UserController {
 
     public function getAll(Request $request, Response $response): Response {
         try {
-            // ✅ CORRECTO: Usar el modelo
+
             $user = new User($this->db);
             $users = $user->getAll();
 
