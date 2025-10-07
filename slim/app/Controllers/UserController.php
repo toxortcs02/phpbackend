@@ -132,7 +132,7 @@ class UserController {
 
 
             $user = new User($this->db);
-            $userData = $user->getById($userId);
+            $userData = $user->getUser($userId);
 
             if ($userData) {
                 return $this->jsonResponse($response, $userData, 200);
@@ -221,6 +221,57 @@ class UserController {
         }
     }
 
+    public function deleteUser(Request $request, Response $response, array $args): Response {
+        try {
+            $userId = $args['id'];
+            $isOwner = ($userId == $request->getAttribute('user_id'));
+            $isAdmin = $request->getAttribute('is_admin');
+
+            // 1. Verificar autorización
+            if (!$isOwner && !$isAdmin) {
+                return $this->jsonResponse($response, [
+                    "error" => "No autorizado para eliminar este usuario"
+                ], 403);
+            }
+
+            $user = new User($this->db);
+
+            // 2. Verificar que el usuario existe
+            $userData = $user->getUser($userId);
+            if (!$userData) {
+                return $this->jsonResponse($response, [
+                    "error" => "Usuario no encontrado"
+                ], 404);
+            }
+
+            if ($userData['is_admin']) {
+                return $this->jsonResponse($response, [
+                    "error" => "No se puede eliminar un usuario administrador"
+                ], 403);
+            }
+
+            if ($user->getUserBookings($userId)) {
+                return $this->jsonResponse($response, [
+                    "error" => "No se puede eliminar un usuario con reservas activas"
+                ], 409);
+            }
+
+            if ($user->deleteUser($userId)) {
+                return $this->jsonResponse($response, [
+                    "message" => "Usuario eliminado exitosamente"
+                ], 200);
+            } else {
+                return $this->jsonResponse($response, [
+                    "error" => "Error al eliminar el usuario"
+                ], 500);
+            }
+
+        } catch (PDOException $e) {
+            return $this->jsonResponse($response, [
+                "error" => "Error al eliminar usuario: " . $e->getMessage()
+            ], 500);
+        }
+    }
     public function logout(Request $request, Response $response): Response {
         try {
             $authHeader = $request->getHeaderLine('Authorization');

@@ -184,6 +184,15 @@ class User {
         return $stmt->execute($params);
     }
 
+    public function deleteUser($userId): bool{
+        try {
+            $stmt = $this->conn->prepare("DELETE FROM users WHERE id = :id");
+            $stmt->bindParam(':id', $userId, PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            throw new \Exception("Error deleting user: " . $e->getMessage());
+        }  
+    }
     public function getUser($id) {
         $stmt = $this->conn->prepare("SELECT id, email, first_name, last_name, is_admin FROM users WHERE id = :id");
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);

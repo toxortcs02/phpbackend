@@ -42,17 +42,17 @@ return function (App $app) {
 
     // Registro
     // Espera JSON: { email, password, first_name, last_name }
-    $app->post('/api/users', [$userController, 'register']);
+    $app->post('/api/user', [$userController, 'register']);
 
     // Login
     // Espera JSON: { email, password }
     $app->post('/api/login', [$userController, 'login']);
 
     // Listado de usuarios (sin autenticación en este ejemplo)
-    $app->get('/api/users', [$userController, 'getAll']);
+    $app->get('/api/user/all', [$userController, 'getAll']);
 
-    $app->get('/api/users', [$userController, 'searchUsers']); // Búsqueda de usuarios por nombre o email
-
+    // Búsqueda de usuarios por nombre o email
+    $app->get('/api/users', [$userController, 'searchUsers']); 
     // Grupo de rutas protegidas por autenticación
     $app->group('/api', function ($group) use ($userController) {
 
@@ -62,8 +62,13 @@ return function (App $app) {
         //espera JSON: { email, first_name, last_name, password (opcional) }
         $group->patch('/user/{id}', [$userController, 'updateUser']);
 
+
+        // Eliminar usuario
+        //espera JSON: { email, first_name, last_name, password (opcional) }
+        $group->delete('/user/{id}', [$userController, 'deleteUser']);
+
         // Logout
-        $group->post('/logout', [$userController, 'logout']);
+        $group->post('/user/logout', [$userController, 'logout']);
 
     })->add($authMiddleware);
 
