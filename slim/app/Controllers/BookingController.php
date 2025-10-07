@@ -263,13 +263,8 @@ class BookingController {
                 $participant = new BookingParticipant($this->db);
                 $participant->deleteByBookingId($bookingId);
 
-<<<<<<< HEAD:slim/app/Controllers/BookingController.php
-                // Eliminar reserva
-                $booking->deleteBooking($bookingId);
-=======
                 // Eliminar la reserva principal
                 $booking->delete($bookingId);
->>>>>>> 1f19c4b5c8d0eeb24629da811c634271da98f791:slim/app/Controllers/BookingController
 
                 $this->db->commit();
 

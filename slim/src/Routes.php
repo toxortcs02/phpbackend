@@ -19,14 +19,9 @@ return function (App $app) {
     $connection = $database->getConnection();
 
     $userController = new UserController($connection);
-<<<<<<< HEAD
-    $courtControler = new CourtController($connection);
-
-=======
     $courtController = new CourtController($connection);
     $bookingController = new BookingController($connection);
->>>>>>> 1f19c4b5c8d0eeb24629da811c634271da98f791
-
+    
     $authMiddleware = new AuthMiddleware($connection);
     $adminMiddleware = new IsAdminMiddleware();
 
@@ -50,25 +45,6 @@ return function (App $app) {
     $app->post('/api/users', [$userController, 'register']);
 
     // Login
-<<<<<<< HEAD
-    $app->post('/api/users/login', [$userController, 'login']);
-    // Listado de usuarios
-    $app->get('/api/users', [$userController, 'getAll']);
-
-
-
-
-
-    
-$app->group('/api/users', function ($group) use ($userController) {
-        
-        // Obtener perfil del usuario autenticado
-        $group->get('/profile', [$userController, 'getProfile']);
-        
-        // Actualizar perfil del usuario autenticado
-        $group->patch('/profile/{id}', [$userController, 'updateProfile']);
-        
-=======
     // Espera JSON: { email, password }
     $app->post('/api/login', [$userController, 'login']);
 
@@ -86,7 +62,6 @@ $app->group('/api/users', function ($group) use ($userController) {
         //espera JSON: { email, first_name, last_name, password (opcional) }
         $group->patch('/user/{id}', [$userController, 'updateUser']);
 
->>>>>>> 1f19c4b5c8d0eeb24629da811c634271da98f791
         // Logout
         $group->post('/logout', [$userController, 'logout']);
 
