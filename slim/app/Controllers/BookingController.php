@@ -12,16 +12,21 @@ use PDO;
 class BookingController {
     private $db;
 
+    // Constructor: recibe la conexión PDO y la guarda
     public function __construct(PDO $db) {
         $this->db = $db;
     }
 
+    /**
+     * Crea una nueva reserva de cancha.
+     * Realiza múltiples validaciones antes de crear la reserva y sus participantes.
+     */
     public function create(Request $request, Response $response): Response {
         try {
             $data = $request->getParsedBody();
             $creatorId = $request->getAttribute('user_id');
 
-            // Validar campos requeridos
+            // Validar que todos los campos requeridos estén presentes
             if (empty($data['court_id']) || empty($data['booking_datetime']) || 
                 empty($data['duration_blocks']) || empty($data['participants'])) {
                 $response->getBody()->write(json_encode([
@@ -168,11 +173,11 @@ class BookingController {
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
             }
 
-            // Todas las validaciones pasaron, crear la reserva
+            // Todas las validaciones pasaron, crear la reserva en la base de datos
             $this->db->beginTransaction();
 
             try {
-                // Crear booking
+                // Crear la reserva principal
                 $booking->created_by = $creatorId;
                 $booking->court_id = $courtId;
                 $booking->booking_datetime = $bookingDatetime;
@@ -193,10 +198,10 @@ class BookingController {
                     $participant->user_id = $participantId;
                     $participant->create();
                 }
-
+                //
                 $this->db->commit();
 
-                // Obtener la reserva completa con participantes
+                // Obtener la reserva completa con participantes para la respuesta
                 $bookingData = $booking->getById($booking->id);
                 $participantsData = $participant->getByBookingId($booking->id);
 
@@ -208,11 +213,13 @@ class BookingController {
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
 
             } catch (\Exception $e) {
+                // Si ocurre un error, revertir la transacción
                 $this->db->rollBack();
                 throw $e;
             }
 
         } catch (\Exception $e) {
+            // Manejo de errores generales
             $response->getBody()->write(json_encode([
                 "error" => $e->getMessage()
             ]));
@@ -220,6 +227,10 @@ class BookingController {
         }
     }
 
+    /**
+     * Elimina una reserva existente.
+     * Solo el creador o un administrador pueden eliminar la reserva.
+     */
     public function delete(Request $request, Response $response, array $args): Response {
         try {
             $bookingId = $args['id'];
@@ -229,6 +240,7 @@ class BookingController {
             $booking = new Booking($this->db);
             $bookingData = $booking->getById($bookingId);
 
+            // Verificar que la reserva existe
             if (!$bookingData) {
                 $response->getBody()->write(json_encode([
                     "error" => "Reserva no encontrada"
@@ -236,7 +248,7 @@ class BookingController {
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
             }
 
-            // Solo el creador o un admin pueden eliminar
+            // Solo el creador o un admin pueden eliminar la reserva
             if ($bookingData['created_by'] != $userId && !$isAdmin) {
                 $response->getBody()->write(json_encode([
                     "error" => "No tienes permiso para eliminar esta reserva"
@@ -247,12 +259,17 @@ class BookingController {
             $this->db->beginTransaction();
 
             try {
-                // Eliminar participantes primero (por foreign key)
+                // Eliminar participantes primero (por restricción de clave foránea)
                 $participant = new BookingParticipant($this->db);
                 $participant->deleteByBookingId($bookingId);
 
+<<<<<<< HEAD:slim/app/Controllers/BookingController.php
                 // Eliminar reserva
                 $booking->deleteBooking($bookingId);
+=======
+                // Eliminar la reserva principal
+                $booking->delete($bookingId);
+>>>>>>> 1f19c4b5c8d0eeb24629da811c634271da98f791:slim/app/Controllers/BookingController
 
                 $this->db->commit();
 
@@ -262,11 +279,13 @@ class BookingController {
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 
             } catch (\Exception $e) {
+                // Si ocurre un error, revertir la transacción
                 $this->db->rollBack();
                 throw $e;
             }
 
         } catch (\Exception $e) {
+            // Manejo de errores generales
             $response->getBody()->write(json_encode([
                 "error" => $e->getMessage()
             ]));
@@ -274,11 +293,16 @@ class BookingController {
         }
     }
 
+    /**
+     * Lista todas las reservas para una fecha específica.
+     * Devuelve las reservas junto con sus participantes.
+     */
     public function list(Request $request, Response $response): Response {
         try {
             $params = $request->getQueryParams();
             $date = $params['date'] ?? null;
 
+            // Validar que el parámetro 'date' esté presente
             if (!$date) {
                 $response->getBody()->write(json_encode([
                     "error" => "El parámetro 'date' es requerido (formato: Y-m-d)"
@@ -298,16 +322,18 @@ class BookingController {
             $booking = new Booking($this->db);
             $bookings = $booking->getByDate($date);
 
-            // Agregar participantes a cada reserva
+            // Para cada reserva, agregar los participantes
             $participant = new BookingParticipant($this->db);
             foreach ($bookings as &$bookingItem) {
                 $bookingItem['participants'] = $participant->getByBookingId($bookingItem['id']);
             }
 
+            // Devolver la lista de reservas con participantes
             $response->getBody()->write(json_encode($bookings));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 
         } catch (\Exception $e) {
+            // Manejo de errores generales
             $response->getBody()->write(json_encode([
                 "error" => $e->getMessage()
             ]));

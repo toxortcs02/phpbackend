@@ -138,6 +138,24 @@ class User {
         return ['success' => true];
     }
 
+    public function getAllnonAdmin(){
+        $stmt = $this->conn->query("SELECT id, email, first_name, last_name FROM users WHERE is_admin = 0");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    public function searchByText($searchTerm) {
+        $likeTerm = '%' . $searchTerm . '%';
+        $stmt = $this->conn->prepare("
+            SELECT id, email, first_name, last_name 
+            FROM users 
+            WHERE 
+                is_admin = 0 
+                AND (email LIKE :term OR first_name LIKE :term OR last_name LIKE :term)
+        ");
+        $stmt->bindParam(':term', $likeTerm, PDO::PARAM_STR);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
     public function updateUser($userId, $firstName, $lastName, $password) {
         $fields = [];
