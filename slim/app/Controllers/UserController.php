@@ -149,6 +149,28 @@ class UserController {
         }
     }
 
+    public function searchUsers(Request $request, Response $response): Response {
+        $queryParams = $request->getQueryParams();
+        $searchText = $queryParams['search'] ?? '';
+
+        try {
+            $user = new User($this->db);
+
+            // Si search está vacío, devuelve todos los usuarios no admin
+            if (empty($searchText)) {
+                $results = $user->getAllnonAdmin();
+            } else {
+                // Si search tiene valor, busca por nombre, apellido o email (no admin)
+                $results = $user->searchByText($searchText);
+            }
+
+            return $this->jsonResponse($response, $results, 200);
+        } catch (PDOException $e) {
+            return $this->jsonResponse($response, [
+                "error" => "Error al buscar usuarios: " . $e->getMessage()
+            ], 500);
+        }
+    }
     public function updateUser(Request $request, Response $response, array $args): Response {
         try {
             $userId = $args['id'];

@@ -2,27 +2,32 @@
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\App;
-use App\Controllers\UserController;
+
 use App\Config\Database;
+use App\Controllers\UserController;
+use App\Controllers\CourtController;
+use App\Controllers\BookingController;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\IsAdminMiddleware;
-use App\Controllers\CourtController;
-
-
-
 
 return function (App $app) {
 
+    // ==============================
+    // 🔧 Inicialización
+    // ==============================
     $database = new Database();
     $connection = $database->getConnection();
 
     $userController = new UserController($connection);
-    $courtControler = new CourtController($connection);
+    $courtController = new CourtController($connection);
     $bookingController = new BookingController($connection);
 
     $authMiddleware = new AuthMiddleware($connection);
     $adminMiddleware = new IsAdminMiddleware();
 
+    // ==============================
+    // 🧪 Ruta de prueba (sin autenticación)
+    // ==============================
     $app->get('/api/test', function (Request $request, Response $response) {
         $response->getBody()->write(json_encode([
             'message' => 'API funcionando correctamente',
@@ -30,61 +35,80 @@ return function (App $app) {
         ]));
         return $response->withHeader('Content-Type', 'application/json');
     });
-    
-    // Ruta para registro de usuario
-/*
-    La ruta de registro crea un nuevo usuario. Espera un JSON en el cuerpo de la solicitud con los campos:
-    - email
-    - password
-    - first_name
-    - last_name
-*/
+
+    // ==============================
+    // 👤 Usuarios
+    // ==============================
+
+    // Registro
+    // Espera JSON: { email, password, first_name, last_name }
     $app->post('/api/users', [$userController, 'register']);
+
     // Login
+    // Espera JSON: { email, password }
     $app->post('/api/login', [$userController, 'login']);
-    // Listado de usuarios
+
+    // Listado de usuarios (sin autenticación en este ejemplo)
     $app->get('/api/users', [$userController, 'getAll']);
-    
 
-    // POST /booking - Crear reserva (usuario autenticado)
-    $app->post('/booking', [$bookingController, 'create'])->add($authMiddleware);
+    $app->get('/api/users', [$userController, 'searchUsers']); // Búsqueda de usuarios por nombre o email
 
-    // DELETE /booking/{id} - Eliminar reserva (creador o admin)
-    $app->delete('/booking/{id}', [$bookingController, 'delete'])->add($authMiddleware);
+    // Grupo de rutas protegidas por autenticación
+    $app->group('/api', function ($group) use ($userController) {
 
-    // GET /booking?date={date} - Ver reservas del día (público)
-    $app->get('/booking', [$bookingController, 'list']);
-
-
-
-    
-$app->group('/api', function ($group) use ($userController) {
-        
-        // Obtener perfil del usuario autenticado
+        // Obtener perfil
         $group->get('/user/{id}', [$userController, 'getUser']);
-        
-        // Actualizar perfil del usuario autenticado
+        //actualizar perfil
+        //espera JSON: { email, first_name, last_name, password (opcional) }
         $group->patch('/user/{id}', [$userController, 'updateUser']);
-        
+
         // Logout
         $group->post('/logout', [$userController, 'logout']);
-        
-        
-    })->add($authMiddleware);
-    
-$app->group('/api', function ($group) use ($courtControler, $authMiddleware, $adminMiddleware) {
-    
-    // Rutas que requieren ser administrador
-    $group->group('', function ($adminGroup) use ($courtControler) {
-        $adminGroup->post('/court', [$courtControler, 'createCourt']);
-        $adminGroup->put('/court/{id}', [$courtControler, 'updateCourt']);
-        $adminGroup->delete('/court/{id}', [$courtControler, 'deleteCourt']);
-    })->add($adminMiddleware)->add($authMiddleware);
-    
-    // Ruta que solo requiere autenticación
-    $group->get('/court/{id}', [$courtControler, 'getCourt'])
-          ->add($authMiddleware);
-    
-});
 
+    })->add($authMiddleware);
+
+    // ==============================
+    // 🏟️ Canchas
+    // ==============================
+    $app->group('/api', function ($group) use ($courtController, $authMiddleware, $adminMiddleware) {
+
+        // 🔒 Solo admins autenticados
+        $group->group('', function ($adminGroup) use ($courtController) {
+            // Crear una cancha
+            // Espera JSON: { name, description }
+            $adminGroup->post('/court', [$courtController, 'createCourt']);
+            
+            // Editar una cancha existente 
+            // Espera JSON: { name, description }
+            //TODO
+            $adminGroup->put('/court/{id}', [$courtController, 'updateCourt']);
+
+            // : Eliminar una cancha.
+            //TODO
+            $adminGroup->delete('/court/{id}', [$courtController, 'deleteCourt']);
+        })->add($adminMiddleware)->add($authMiddleware);
+
+        // 🔐 Solo autenticados (no necesariamente admin)
+        // Obtener información de una cancha específica. 
+        //TODO
+        $group->get('/court/{id}', [$courtController, 'getCourt'])
+              ->add($authMiddleware);
+
+    });
+
+    // ==============================
+    // 📅 Reservas
+    // ==============================
+    $app->group('/api', function ($group) use ($bookingController, $authMiddleware) {
+
+        // Crear reserva (usuario autenticado)
+        // Espera JSON: { court_id, booking_datetime, duration_blocks, participants }
+        $group->post('/booking', [$bookingController, 'create'])->add($authMiddleware);
+
+        // Eliminar reserva (creador o admin)
+        $group->delete('/booking/{id}', [$bookingController, 'delete'])->add($authMiddleware);
+
+        // Listar reservas del día (público)
+        $group->get('/booking', [$bookingController, 'list']);
+    });
 };

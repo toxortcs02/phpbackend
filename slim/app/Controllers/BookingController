@@ -198,7 +198,7 @@ class BookingController {
                     $participant->user_id = $participantId;
                     $participant->create();
                 }
-
+                //
                 $this->db->commit();
 
                 // Obtener la reserva completa con participantes para la respuesta
