@@ -63,7 +63,8 @@ class Booking {
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':court_id', $courtId, PDO::PARAM_INT);
             $stmt->bindParam(':start_time', $startDatetime);
-            $stmt->bindParam(':end_time', $end->format('Y-m-d H:i:s'));
+            $endTime = $end->format('Y-m-d H:i:s');
+            $stmt->bindParam(':end_time', $endTime);
             $stmt->execute();
             
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -98,7 +99,8 @@ class Booking {
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
             $stmt->bindParam(':start_time', $startDatetime);
-            $stmt->bindParam(':end_time', $end->format('Y-m-d H:i:s'));
+            $endTime = $end->format('Y-m-d H:i:s');
+            $stmt->bindParam(':end_time', $endTime);
             
             if ($excludeBookingId) {
                 $stmt->bindParam(':exclude_id', $excludeBookingId, PDO::PARAM_INT);

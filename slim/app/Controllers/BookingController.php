@@ -252,7 +252,7 @@ class BookingController {
                 $participant->deleteByBookingId($bookingId);
 
                 // Eliminar reserva
-                $booking->delete($bookingId);
+                $booking->deleteBooking($bookingId);
 
                 $this->db->commit();
 
