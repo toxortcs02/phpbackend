@@ -35,6 +35,9 @@ return function (App $app) {
         ]));
         return $response->withHeader('Content-Type', 'application/json');
     });
+    // Listado de usuarios (sin autenticación en este ejemplo)
+    $app->get('/api/user/all', [$userController, 'getAll']);
+
 
     // ==============================
     // 👤 Usuarios
@@ -47,10 +50,6 @@ return function (App $app) {
     // Login
     // Espera JSON: { email, password }
     $app->post('/api/login', [$userController, 'login']);
-
-    // Listado de usuarios (sin autenticación en este ejemplo)
-    $app->get('/api/user/all', [$userController, 'getAll']);
-
     // Búsqueda de usuarios por nombre o email
     $app->get('/api/users', [$userController, 'searchUsers']); 
     // Grupo de rutas protegidas por autenticación

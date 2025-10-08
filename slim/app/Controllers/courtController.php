@@ -61,5 +61,16 @@ class CourtController {
             ], 500);
         }
     }
-    
+    public function updateCourt(Request $request, Response $response, array $args) {
+         try {
+                        $userId = $args['id'];
+            $data = $request->getParsedBody();
+            $isAdmin = $request->getAttribute('is_admin');
+            if
+         } catch (\Throwable $th) {
+            
+         }   
+
+
+    }
 }
