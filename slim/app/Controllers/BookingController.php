@@ -253,7 +253,7 @@ class BookingController {
                 $response->getBody()->write(json_encode([
                     "error" => "No tienes permiso para eliminar esta reserva"
                 ]));
-                return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
             }
 
             $this->db->beginTransaction();
@@ -264,7 +264,7 @@ class BookingController {
                 $participant->deleteByBookingId($bookingId);
 
                 // Eliminar la reserva principal
-                $booking->delete($bookingId);
+                $booking->deleteBooking($bookingId);
 
                 $this->db->commit();
 

@@ -127,7 +127,7 @@ class UserController {
             if ($userId != $requestingUserId && !$isAdmin) {
                 return $this->jsonResponse($response, [
                     "error" => "No autorizado para ver este perfil"
-                ], 403);
+                ], 401);
             }
 
 
@@ -181,7 +181,7 @@ class UserController {
             if (!$isOwner && !$isAdmin) {
                 return $this->jsonResponse($response, [
                     "error" => "No autorizado para actualizar este perfil"
-                ], 403);
+                ], 401);
             }
 
             $firstName = $data['first_name'] ?? null;
@@ -231,7 +231,7 @@ class UserController {
             if (!$isOwner && !$isAdmin) {
                 return $this->jsonResponse($response, [
                     "error" => "No autorizado para eliminar este usuario"
-                ], 403);
+                ], 401);
             }
 
             $user = new User($this->db);
@@ -247,7 +247,7 @@ class UserController {
             if ($userData['is_admin']) {
                 return $this->jsonResponse($response, [
                     "error" => "No se puede eliminar un usuario administrador"
-                ], 403);
+                ], 401);
             }
 
             if ($user->getUserBookings($userId)) {

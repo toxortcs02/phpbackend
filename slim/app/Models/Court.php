@@ -39,7 +39,6 @@ class Court {
             return false;
         }
     }
-    // obtiene una cancha por su id y devuelve un array asociativo
     public function findById($id) {
         $stmt = $this->conn->prepare("SELECT * FROM courts WHERE id = :id");
         $stmt->bindParam(':id', $id);
