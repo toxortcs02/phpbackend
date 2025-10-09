@@ -14,7 +14,6 @@ class CourtController {
         $this->db = $db;
     }
 
-    // Helper para respuestas JSON
     private function jsonResponse(Response $response, array $data, int $status): Response {
         $response->getBody()->write(json_encode($data));
         return $response->withHeader('Content-Type', 'application/json')->withStatus($status);
@@ -22,86 +21,118 @@ class CourtController {
 
     public function createCourt(Request $request, Response $response) {
         try {
+            if (!$request->getAttribute('is_admin')) {
+                return $this->jsonResponse($response, ["error" => "No autorizado"], 403);
+            }
+
             $data = $request->getParsedBody();
             $name = $data['name'] ?? '';
             $description = $data['description'] ?? '';
 
             if (empty($name) || empty($description)) {
-                return $this->jsonResponse($response, [
-                    "error" => "Todos los campos son requeridos"
-                ], 400);
+                return $this->jsonResponse($response, ["error" => "El nombre y la descripción son requeridos"], 400);
             }
 
             $court = new Court($this->db);
 
             if ($court->findByName($name)) {
-                return $this->jsonResponse($response, [
-                    "error" => "El nombre de la cancha ya está registrado"
-                ], 409);
+                return $this->jsonResponse($response, ["error" => "El nombre de la cancha ya está en uso"], 409);
             }
 
-            $court->name = $name;
-            $court->description = $description;
-            $courtId = $court->create();
+            $courtId = $court->create($name, $description);
 
             if ($courtId) {
-                return $this->jsonResponse($response, [
-                    "message" => "Cancha creada exitosamente",
-                    "court_id" => $courtId
-                ], 201);
+                return $this->jsonResponse($response, ["message" => "Cancha creada exitosamente", "court_id" => $courtId], 201);
             } else {
-                return $this->jsonResponse($response, [
-                    "error" => "Error al crear la cancha"
-                ], 500);
+                return $this->jsonResponse($response, ["error" => "Error al crear la cancha"], 500);
             }
 
         } catch (PDOException $e) {
-            return $this->jsonResponse($response, [
-                "error" => "Error del servidor: " . $e->getMessage()
-            ], 500);
+            return $this->jsonResponse($response, ["error" => "Error de base de datos: " . $e->getMessage()], 500);
         }
     }
-    public function updateCourt(Request $request, Response $response, array $args) {
-         try {
-            $courtId = $args['id'];
-            $data = $request->getParsedBody();
-            $isAdmin = $request->getAttribute('is_admin');
-            if (!$isAdmin) {
-                return $this->jsonResponse($response, [
-                    "error" => "No autorizado para actualizar este perfil"
-                ], 401);
-            }
-            $name = $data['name'] ?? null;
-            $description = $data['description'] ?? null;
-            if (empty($name) OR empty($description)) {
-                return $this->jsonResponse($response, [
-                    "error" => "Todos los campos son requeridos"
-                ], 400);
-            }
 
+    public function updateCourt(Request $request, Response $response, array $args) {
+        try {
+            $courtId = $args['id'];
             $court = new Court($this->db);
 
-            if($court->findById($courtId)) {
-                return $this->jsonResponse($response, [
-                    "error" => "Cancha no encontrada"
-                ], 404);
+            if (!$court->findById($courtId)) {
+                return $this->jsonResponse($response, ["error" => "Cancha no encontrada"], 404);
             }
 
-            $courtData = $court->editCourt($courtId, $name, $description);
-            if ($courtData) {
-                return $this->jsonResponse($response, [
-                    "message" => "Cancha actualizada exitosamente"
-                ], 200);
-            } else {
-                return $this->jsonResponse($response, [
-                    "error" => "Error al actualizar la cancha o no se encontraron cambios"
-                ], 500);
+            if (!$request->getAttribute('is_admin')) {
+                return $this->jsonResponse($response, ["error" => "No autorizado para esta acción"], 403);
             }
 
-         } catch (\Throwable $th) {
+            $data = $request->getParsedBody();
+            $name = $data['name'] ?? null;
+            $description = $data['description'] ?? null;
             
-         }   
+            if (empty($name) && empty($description)) {
+                return $this->jsonResponse($response, ["error" => "Se requiere al menos un campo (nombre o descripción) para actualizar"], 400);
+            }
+            $updated = $court->update($courtId, $name, $description);
+            if ($updated) {
+                return $this->jsonResponse($response, ["message" => "Cancha actualizada exitosamente"], 200);
+            } else {
+                return $this->jsonResponse($response, ["error" => "No se pudo actualizar la cancha o no hubo cambios"], 400);
+            }
 
+        } catch (PDOException $e) {
+            return $this->jsonResponse($response, ["error" => "Error de base de datos: " . $e->getMessage()], 500);
+        }
+    }
 
+    public function deleteCourt(Request $request, Response $response, array $args): Response {
+        try {
+            $courtId = $args['id'];
+            $court = new Court($this->db);
+
+            if (!$court->findById($courtId)) {
+                return $this->jsonResponse($response, ["error" => "Cancha no encontrada"], 404);
+            }
+
+            if (!$request->getAttribute('is_admin')) {
+                return $this->jsonResponse($response, ["error" => "No autorizado para esta acción"], 403);
+            }
+
+            if ($court->hasBookings($courtId)) {
+                return $this->jsonResponse($response, ["error" => "No se puede eliminar una cancha con reservas activas"], 409);
+            }
+
+            if ($court->delete($courtId)) {
+                return $this->jsonResponse($response, ["message" => "Cancha eliminada exitosamente"], 200);
+            } else {
+                return $this->jsonResponse($response, ["error" => "Error al eliminar la cancha"], 500);
+            }
+        } catch (PDOException $e) {
+            return $this->jsonResponse($response, ["error" => "Error de base de datos: " . $e->getMessage()], 500);
+        }
+    }
+
+    public function getAllCourts(Request $request, Response $response): Response {
+        try {
+            $court = new Court($this->db);
+            $courts = $court->getAll();
+            return $this->jsonResponse($response, $courts, 200);
+        } catch (PDOException $e) {
+            return $this->jsonResponse($response, ["error" => "Error al obtener las canchas"], 500);
+        }
+    }
+
+    public function getCourtById(Request $request, Response $response, array $args): Response {
+        try {
+            $courtId = $args['id'];
+            $court = new Court($this->db);
+            $courtData = $court->findById($courtId);
+            if ($courtData) {
+                return $this->jsonResponse($response, $courtData, 200);
+            } else {
+                return $this->jsonResponse($response, ["error" => "Cancha no encontrada"], 404);
+            }
+        } catch (PDOException $e) {
+            return $this->jsonResponse($response, ["error" => "Error al obtener la cancha"], 500);
+        }
     }
 }

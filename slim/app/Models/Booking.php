@@ -153,7 +153,6 @@ class Booking {
         }
     }
 
-    // Eliminar reserva
     public function deleteBooking($id) {
         try {
             $query = "DELETE FROM {$this->table} WHERE id = :id";
@@ -167,7 +166,6 @@ class Booking {
         }
     }
 
-    // Verificar si la cancha existe
     public function courtExists($courtId) {
         try {
             $query = "SELECT id FROM courts WHERE id = :id";

@@ -12,7 +12,6 @@ use PDO;
 class BookingController {
     private $db;
 
-    // Constructor: recibe la conexión PDO y la guarda
     public function __construct(PDO $db) {
         $this->db = $db;
     }
@@ -26,7 +25,6 @@ class BookingController {
             $data = $request->getParsedBody();
             $creatorId = $request->getAttribute('user_id');
 
-            // Validar que todos los campos requeridos estén presentes
             if (empty($data['court_id']) || empty($data['booking_datetime']) || 
                 empty($data['duration_blocks']) || empty($data['participants'])) {
                 $response->getBody()->write(json_encode([
@@ -38,9 +36,7 @@ class BookingController {
             $courtId = $data['court_id'];
             $bookingDatetime = $data['booking_datetime'];
             $durationBlocks = $data['duration_blocks'];
-            $participants = $data['participants']; // Array de user IDs
-
-            // Validación 1: Duración máxima de 6 bloques (3 horas)
+            $participants = $data['participants']; 
             if ($durationBlocks > 6 || $durationBlocks < 1) {
                 $response->getBody()->write(json_encode([
                     "error" => "La duración debe ser entre 1 y 6 bloques (máximo 3 horas)"
@@ -48,8 +44,7 @@ class BookingController {
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
             }
 
-            // Validación 2: Número de participantes (2 para singles, 4 para dobles)
-            $totalPlayers = count($participants) + 1; // +1 incluye al creador
+            $totalPlayers = count($participants) + 1; 
             if ($totalPlayers != 2 && $totalPlayers != 4) {
                 $response->getBody()->write(json_encode([
                     "error" => "Debe haber 2 jugadores (singles) o 4 jugadores (dobles). Total actual: {$totalPlayers}"
@@ -57,7 +52,6 @@ class BookingController {
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
             }
 
-            // Validación 3: Formato de fecha y hora
             try {
                 $datetime = new DateTime($bookingDatetime);
             } catch (\Exception $e) {
@@ -67,7 +61,6 @@ class BookingController {
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
             }
 
-            // Validación 4: Los minutos deben ser 00 o 30
             $minutes = (int)$datetime->format('i');
             if ($minutes !== 0 && $minutes !== 30) {
                 $response->getBody()->write(json_encode([
@@ -76,7 +69,6 @@ class BookingController {
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
             }
 
-            // Validación 5: Horario entre 8:00 y 22:00
             $hour = (int)$datetime->format('H');
             if ($hour < 8 || $hour >= 22) {
                 $response->getBody()->write(json_encode([
@@ -85,7 +77,6 @@ class BookingController {
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
             }
 
-            // Validación 6: La reserva no debe exceder las 22:00
             $endTime = clone $datetime;
             $endTime->modify('+' . ($durationBlocks * 30) . ' minutes');
             $endHour = (int)$endTime->format('H');
@@ -101,7 +92,6 @@ class BookingController {
             $booking = new Booking($this->db);
             $participant = new BookingParticipant($this->db);
 
-            // Validación 7: Verificar que la cancha existe
             if (!$booking->courtExists($courtId)) {
                 $response->getBody()->write(json_encode([
                     "error" => "La cancha especificada no existe"
@@ -109,7 +99,6 @@ class BookingController {
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
             }
 
-            // Validación 8: Verificar que la cancha esté disponible
             if (!$booking->isCourtAvailable($courtId, $bookingDatetime, $durationBlocks)) {
                 $response->getBody()->write(json_encode([
                     "error" => "La cancha no está disponible en el horario seleccionado"
@@ -117,7 +106,6 @@ class BookingController {
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
             }
 
-            // Validación 9: Verificar que todos los participantes existen
             foreach ($participants as $participantId) {
                 if (!$participant->userExists($participantId)) {
                     $response->getBody()->write(json_encode([
@@ -127,7 +115,6 @@ class BookingController {
                 }
             }
 
-            // Validación 10: El creador no debe estar en la lista de participantes
             if (in_array($creatorId, $participants)) {
                 $response->getBody()->write(json_encode([
                     "error" => "El creador de la reserva no debe incluirse en la lista de participantes"
@@ -135,7 +122,6 @@ class BookingController {
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
             }
 
-            // Validación 11: Verificar conflictos de horario del creador
             $creatorConflict = $booking->hasUserConflict($creatorId, $bookingDatetime, $durationBlocks);
             if ($creatorConflict) {
                 $conflictEnd = new DateTime($creatorConflict['booking_datetime']);
@@ -147,7 +133,6 @@ class BookingController {
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
             }
 
-            // Validación 12: Verificar conflictos de horario de cada participante
             $conflicts = [];
             foreach ($participants as $participantId) {
                 $conflict = $booking->hasUserConflict($participantId, $bookingDatetime, $durationBlocks);
@@ -173,11 +158,9 @@ class BookingController {
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
             }
 
-            // Todas las validaciones pasaron, crear la reserva en la base de datos
             $this->db->beginTransaction();
 
             try {
-                // Crear la reserva principal
                 $booking->created_by = $creatorId;
                 $booking->court_id = $courtId;
                 $booking->booking_datetime = $bookingDatetime;
@@ -187,21 +170,18 @@ class BookingController {
                     throw new \Exception("Error al crear la reserva");
                 }
 
-                // Agregar al creador como participante
                 $participant->booking_id = $booking->id;
                 $participant->user_id = $creatorId;
                 $participant->create();
 
-                // Agregar a los demás participantes
                 foreach ($participants as $participantId) {
                     $participant->booking_id = $booking->id;
                     $participant->user_id = $participantId;
                     $participant->create();
                 }
-                //
+                
                 $this->db->commit();
 
-                // Obtener la reserva completa con participantes para la respuesta
                 $bookingData = $booking->getById($booking->id);
                 $participantsData = $participant->getByBookingId($booking->id);
 
@@ -213,13 +193,11 @@ class BookingController {
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
 
             } catch (\Exception $e) {
-                // Si ocurre un error, revertir la transacción
                 $this->db->rollBack();
                 throw $e;
             }
 
         } catch (\Exception $e) {
-            // Manejo de errores generales
             $response->getBody()->write(json_encode([
                 "error" => $e->getMessage()
             ]));
@@ -240,7 +218,6 @@ class BookingController {
             $booking = new Booking($this->db);
             $bookingData = $booking->getById($bookingId);
 
-            // Verificar que la reserva existe
             if (!$bookingData) {
                 $response->getBody()->write(json_encode([
                     "error" => "Reserva no encontrada"
@@ -248,7 +225,6 @@ class BookingController {
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
             }
 
-            // Solo el creador o un admin pueden eliminar la reserva
             if ($bookingData['created_by'] != $userId && !$isAdmin) {
                 $response->getBody()->write(json_encode([
                     "error" => "No tienes permiso para eliminar esta reserva"
@@ -259,11 +235,9 @@ class BookingController {
             $this->db->beginTransaction();
 
             try {
-                // Eliminar participantes primero (por restricción de clave foránea)
                 $participant = new BookingParticipant($this->db);
                 $participant->deleteByBookingId($bookingId);
 
-                // Eliminar la reserva principal
                 $booking->deleteBooking($bookingId);
 
                 $this->db->commit();
@@ -274,13 +248,11 @@ class BookingController {
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 
             } catch (\Exception $e) {
-                // Si ocurre un error, revertir la transacción
                 $this->db->rollBack();
                 throw $e;
             }
 
         } catch (\Exception $e) {
-            // Manejo de errores generales
             $response->getBody()->write(json_encode([
                 "error" => $e->getMessage()
             ]));
@@ -297,7 +269,6 @@ class BookingController {
             $params = $request->getQueryParams();
             $date = $params['date'] ?? null;
 
-            // Validar que el parámetro 'date' esté presente
             if (!$date) {
                 $response->getBody()->write(json_encode([
                     "error" => "El parámetro 'date' es requerido (formato: Y-m-d)"
@@ -305,7 +276,6 @@ class BookingController {
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
             }
 
-            // Validar formato de fecha
             $datetime = DateTime::createFromFormat('Y-m-d', $date);
             if (!$datetime || $datetime->format('Y-m-d') !== $date) {
                 $response->getBody()->write(json_encode([
@@ -317,18 +287,15 @@ class BookingController {
             $booking = new Booking($this->db);
             $bookings = $booking->getByDate($date);
 
-            // Para cada reserva, agregar los participantes
             $participant = new BookingParticipant($this->db);
             foreach ($bookings as &$bookingItem) {
                 $bookingItem['participants'] = $participant->getByBookingId($bookingItem['id']);
             }
 
-            // Devolver la lista de reservas con participantes
             $response->getBody()->write(json_encode($bookings));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 
         } catch (\Exception $e) {
-            // Manejo de errores generales
             $response->getBody()->write(json_encode([
                 "error" => $e->getMessage()
             ]));
