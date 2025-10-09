@@ -156,10 +156,20 @@ class User {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    public function getById($id) {
+        $stmt = $this->conn->prepare("SELECT id, email, first_name, last_name, is_admin FROM users WHERE id = :id");
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 
     public function updateUser($userId, $firstName, $lastName, $password) {
         $fields = [];
         $params = ['id' => $userId];
+
+        if(!self::getById($userId)){
+            return false;
+        }  
 
         if ($firstName) {
             $fields[] = 'first_name = :first_name';
@@ -171,7 +181,7 @@ class User {
         }
         if ($password) {
             $fields[] = 'password = :password';
-            $params['password'] = password_hash($password, PASSWORD_DEFAULT);
+            $params['password'] = $password;
         }
 
         if (empty($fields)) {

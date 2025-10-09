@@ -63,10 +63,33 @@ class CourtController {
     }
     public function updateCourt(Request $request, Response $response, array $args) {
          try {
-                        $userId = $args['id'];
+            $courtId = $args['id'];
             $data = $request->getParsedBody();
             $isAdmin = $request->getAttribute('is_admin');
-            if
+            if (!$isAdmin) {
+                return $this->jsonResponse($response, [
+                    "error" => "No autorizado para actualizar este perfil"
+                ], 401);
+            }
+            $name = $data['name'] ?? null;
+            $description = $data['description'] ?? null;
+            if (empty($name) && empty($description)) {
+                return $this->jsonResponse($response, [
+                    "error" => "Todos los campos son requeridos"
+                ], 400);
+            }
+            $court = new Court($this->db);
+            $courtData = $court->editCourt($courtId, $name, $description);
+            if ($courtData) {
+                return $this->jsonResponse($response, [
+                    "message" => "Cancha actualizada exitosamente"
+                ], 200);
+            } else {
+                return $this->jsonResponse($response, [
+                    "error" => "Error al actualizar la cancha o no se encontraron cambios"
+                ], 500);
+            }
+
          } catch (\Throwable $th) {
             
          }   
