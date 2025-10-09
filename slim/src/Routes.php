@@ -26,20 +26,6 @@ return function (App $app) {
     $adminMiddleware = new IsAdminMiddleware();
 
     // ==============================
-    // 🧪 Ruta de prueba (sin autenticación)
-    // ==============================
-    $app->get('/api/test', function (Request $request, Response $response) {
-        $response->getBody()->write(json_encode([
-            'message' => 'API funcionando correctamente',
-            'timestamp' => date('Y-m-d H:i:s')
-        ]));
-        return $response->withHeader('Content-Type', 'application/json');
-    });
-    // Listado de usuarios (sin autenticación en este ejemplo)
-    $app->get('/api/user/all', [$userController, 'getAll']);
-
-
-    // ==============================
     // 👤 Usuarios
     // ==============================
 

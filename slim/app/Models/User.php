@@ -1,16 +1,13 @@
 <?php
 namespace App\Models;
 
-use App\Config\Database;
 use PDO;
 use PDOException;
 use DateTime;
 
-
 class User {
     private $conn;
     private $table = 'users';
-
 
     public $id;
     public $email;
@@ -31,17 +28,18 @@ class User {
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+
     public function findByToken($token) {
         $stmt = $this->conn->prepare("SELECT * FROM users WHERE token = :token");
-        $stmt->bindParam(':email', $token);
+        $stmt->bindParam(':token', $token);
         $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+
     public function create() {
         try {
-            $query = "INSERT INTO {$this->table} 
-                    (email, first_name, last_name, password, is_admin) 
-                    VALUES (:email, :first_name, :last_name, :password, :is_admin)";
+            $query = "INSERT INTO {$this->table} (email, first_name, last_name, password, is_admin) 
+                      VALUES (:email, :first_name, :last_name, :password, :is_admin)";
             
             $stmt = $this->conn->prepare($query);
 
@@ -68,31 +66,21 @@ class User {
         $this->first_name = $first_name;
         $this->last_name = $last_name;
         $this->is_admin = $is_admin;
-
         return $this->create();
     }
 
     public function loginUser($email, $password) {
         try {
-            $query = "SELECT * FROM users WHERE email = :email";
-            $statement = $this->conn->prepare($query);
-            $statement->bindParam(':email', $email, PDO::PARAM_STR);
-            $statement->execute();
-            $user = $statement->fetch(PDO::FETCH_ASSOC);
+            $user = $this->findByEmail($email);
+
             if ($user && $password === $user['password']) {
-                
                 $token = bin2hex(random_bytes(32));
-                
                 $fecha = new DateTime();
                 $fecha->modify('+5 minutes');
                 $fechaFormateada = $fecha->format('Y-m-d H:i:s');
                 
-                $updateQuery = "UPDATE users 
-                            SET token = :token, expired = :expired 
-                            WHERE email = :email";
-                
+                $updateQuery = "UPDATE users SET token = :token, expired = :expired WHERE email = :email";
                 $updateStmt = $this->conn->prepare($updateQuery);
-                
                 
                 $updateStmt->bindParam(':token', $token, PDO::PARAM_STR);
                 $updateStmt->bindParam(':expired', $fechaFormateada, PDO::PARAM_STR);  
@@ -101,28 +89,19 @@ class User {
                 if ($updateStmt->execute()) {
                     $user['token'] = $token;
                     $user['expired'] = $fechaFormateada;
-                    
                     return $user;
                 } else {
                     throw new \Exception("Error al actualizar token de usuario");
                 }
             }
             return false;
-            
         } catch (PDOException $e) {
-            error_log("SQL Error: " . $e->getMessage());
-            error_log("Query: " . ($updateQuery ?? 'Query no definida'));
-            
             throw new \Exception("Error en login: " . $e->getMessage());
         }
     }
 
     public function logout($token) {
-        // Verificar token
-        $stmt = $this->conn->prepare("SELECT expired FROM users WHERE token = :token");
-        $stmt->execute(['token' => $token]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
+        $user = $this->findByToken($token);
         if (!$user) {
             return ['success' => false, 'error' => 'Token no encontrado', 'status' => 401];
         }
@@ -131,10 +110,8 @@ class User {
             return ['success' => false, 'error' => 'Token vencido', 'status' => 401];
         }
 
-        // Invalidar token
         $stmt = $this->conn->prepare("UPDATE users SET token = NULL, expired = NULL WHERE token = :token");
         $stmt->execute(['token' => $token]);
-
         return ['success' => true];
     }
 
@@ -146,30 +123,17 @@ class User {
     public function searchByText($searchTerm) {
         $likeTerm = '%' . $searchTerm . '%';
         $stmt = $this->conn->prepare("
-            SELECT id, email, first_name, last_name 
-            FROM users 
-            WHERE 
-                is_admin = 0 
-                AND (email LIKE :term OR first_name LIKE :term OR last_name LIKE :term)
+            SELECT id, email, first_name, last_name FROM users 
+            WHERE is_admin = 0 AND (email LIKE :term OR first_name LIKE :term OR last_name LIKE :term)
         ");
         $stmt->bindParam(':term', $likeTerm, PDO::PARAM_STR);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    public function getById($id) {
-        $stmt = $this->conn->prepare("SELECT id, email, first_name, last_name, is_admin FROM users WHERE id = :id");
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
 
-    public function updateUser($userId, $firstName, $lastName, $password) {
+    public function updateUser($userId, $firstName, $lastName, $password): bool {
         $fields = [];
         $params = ['id' => $userId];
-
-        if(!self::getById($userId)){
-            return false;
-        }  
 
         if ($firstName) {
             $fields[] = 'first_name = :first_name';
@@ -185,13 +149,15 @@ class User {
         }
 
         if (empty($fields)) {
-            return false;
+            return false; 
         }
 
         $sql = "UPDATE users SET " . implode(', ', $fields) . " WHERE id = :id";
         $stmt = $this->conn->prepare($sql);
         
-        return $stmt->execute($params);
+        $stmt->execute($params);
+
+        return $stmt->rowCount() > 0;
     }
 
     public function deleteUser($userId): bool{
@@ -203,6 +169,7 @@ class User {
             throw new \Exception("Error deleting user: " . $e->getMessage());
         }  
     }
+
     public function getUser($id) {
         $stmt = $this->conn->prepare("SELECT id, email, first_name, last_name, is_admin FROM users WHERE id = :id");
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
@@ -210,20 +177,15 @@ class User {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function getAll() {
-        $stmt = $this->conn->query("SELECT id, email, first_name, last_name, is_admin FROM users");
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
     public function getUserBookings($userId) {
         $stmt = $this->conn->prepare("SELECT b.*, c.name as court_name
-                                            FROM bookings b
-                                            INNER JOIN booking_participants bp ON b.id = bp.booking_id
-                                            INNER JOIN courts c ON b.court_id = c.id
-                                            WHERE bp.user_id = :user_id");
+                                      FROM bookings b
+                                      INNER JOIN booking_participants bp ON b.id = bp.booking_id
+                                      INNER JOIN courts c ON b.court_id = c.id
+                                      WHERE bp.user_id = :user_id");
         $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    
 }
+

@@ -73,12 +73,20 @@ class CourtController {
             }
             $name = $data['name'] ?? null;
             $description = $data['description'] ?? null;
-            if (empty($name) && empty($description)) {
+            if (empty($name) OR empty($description)) {
                 return $this->jsonResponse($response, [
                     "error" => "Todos los campos son requeridos"
                 ], 400);
             }
+
             $court = new Court($this->db);
+
+            if($court->findById($courtId)) {
+                return $this->jsonResponse($response, [
+                    "error" => "Cancha no encontrada"
+                ], 404);
+            }
+
             $courtData = $court->editCourt($courtId, $name, $description);
             if ($courtData) {
                 return $this->jsonResponse($response, [
