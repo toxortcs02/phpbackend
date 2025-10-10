@@ -87,8 +87,10 @@ class UserController {
             $result = $user->loginUser($email, $password);
             
             if ($result) {
-                unset($result['password']);
-                return $this->jsonResponse($response, ["message" => "Login exitoso", "user" => $result, "token" => $result['token']], 200);
+                return $this->jsonResponse($response, [
+                    "message" => "Login exitoso", 
+                    "token" => $result['token']
+                ], 200);
             } else {
                 return $this->jsonResponse($response, ["error" => "Credenciales inválidas"], 401);
             }

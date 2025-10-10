@@ -152,6 +152,19 @@ class Booking {
             throw new \Exception("Error getting bookings by date: " . $e->getMessage());
         }
     }
+    public function findById($id) {
+        try {
+            $query = "SELECT * FROM {$this->table} WHERE id = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            throw new \Exception("Error finding booking: " . $e->getMessage());
+        }
+    }
 
     public function deleteBooking($id) {
         try {

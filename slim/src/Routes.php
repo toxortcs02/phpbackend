@@ -9,6 +9,7 @@ use App\Controllers\CourtController;
 use App\Controllers\BookingController;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\IsAdminMiddleware;
+use App\Controllers\BookingParticipantsController;
 
 return function (App $app) {
 
@@ -21,7 +22,7 @@ return function (App $app) {
     $userController = new UserController($connection);
     $courtController = new CourtController($connection);
     $bookingController = new BookingController($connection);
-    
+    $bookingParticipantsController = new BookingParticipantsController($connection);
     $authMiddleware = new AuthMiddleware($connection);
     $adminMiddleware = new IsAdminMiddleware();
 
@@ -62,7 +63,7 @@ return function (App $app) {
     // ==============================
     $app->group('/api', function ($group) use ($courtController, $authMiddleware, $adminMiddleware) {
 
-        // 🔒 Solo admins autenticados
+        // Solo admins autenticados
         $group->group('', function ($adminGroup) use ($courtController) {
             // Crear una cancha
             // Espera JSON: { name, description }
@@ -70,18 +71,15 @@ return function (App $app) {
             
             // Editar una cancha existente 
             // Espera JSON: { name, description }
-            //TODO
             $adminGroup->put('/court/{id}', [$courtController, 'updateCourt']);
 
-            // : Eliminar una cancha.
-            //TODO
+            // Eliminar una cancha.
             $adminGroup->delete('/court/{id}', [$courtController, 'deleteCourt']);
         })->add($adminMiddleware)->add($authMiddleware);
 
-        // 🔐 Solo autenticados (no necesariamente admin)
+        // Solo autenticados (no necesariamente admin)
         // Obtener información de una cancha específica. 
-        //TODO
-        $group->get('/court/{id}', [$courtController, 'getCourt'])
+        $group->get('/court/{id}', [$courtController, 'getCourtById'])
               ->add($authMiddleware);
 
     });
@@ -101,4 +99,9 @@ return function (App $app) {
         // Listar reservas del día (público)
         $group->get('/booking', [$bookingController, 'list']);
     });
+
+    $app->group('/api', function ($group) use ($bookingParticipantsController, $authMiddleware) {
+
+            $group->put('/booking_participants/{id}', [$bookingParticipantsController, 'updateParticipants'])->add($authMiddleware);
+        });
 };

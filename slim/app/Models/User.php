@@ -30,10 +30,14 @@ class User {
     }
 
     public function findByToken($token) {
-        $stmt = $this->conn->prepare("SELECT * FROM users WHERE token = :token");
-        $stmt->bindParam(':token', $token);
-        $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        try {
+            $stmt = $this->conn->prepare("SELECT * FROM users WHERE token = :token");
+            $stmt->bindParam(':token', $token);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return false;
+        }
     }
 
     public function create() {
