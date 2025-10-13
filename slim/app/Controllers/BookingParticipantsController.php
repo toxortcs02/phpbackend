@@ -36,6 +36,7 @@ class BookingParticipantsController {
 
             $bookingModel = new Booking($this->db);
             $booking = $bookingModel->getById($bookingId);
+            
             if (!$booking) {
                 return $this->jsonResponse($response, [
                     "error" => "Reserva no encontrada"
@@ -46,6 +47,26 @@ class BookingParticipantsController {
                 return $this->jsonResponse($response, [
                     "error" => "Solo el creador de la reserva puede modificar los participantes"
                 ], 403);
+            }
+
+            foreach ($newParticipants as $participantId) {
+                if (!is_numeric($participantId)) {
+                    return $this->jsonResponse($response, [
+                        "error" => "Todos los IDs de participantes deben ser numéricos"
+                    ], 400);
+                }
+            }
+
+            if (count($newParticipants) !== count(array_unique($newParticipants))) {
+                return $this->jsonResponse($response, [
+                    "error" => "No se permiten participantes duplicados"
+                ], 400);
+            }
+
+            if (in_array($userId, $newParticipants)) {
+                return $this->jsonResponse($response, [
+                    "error" => "El creador no debe incluirse en la lista de participantes"
+                ], 400);
             }
 
             $totalPlayers = count($newParticipants) + 1; 
@@ -59,29 +80,11 @@ class BookingParticipantsController {
             $participantModel = new BookingParticipant($this->db);
 
             foreach ($newParticipants as $participantId) {
-                if (!is_numeric($participantId)) {
-                    return $this->jsonResponse($response, [
-                        "error" => "Todos los IDs de participantes deben ser numéricos"
-                    ], 400);
-                }
-
                 if (!$participantModel->userExists($participantId)) {
                     return $this->jsonResponse($response, [
                         "error" => "El usuario con ID {$participantId} no existe o es administrador"
                     ], 404);
                 }
-            }
-
-            if (in_array($userId, $newParticipants)) {
-                return $this->jsonResponse($response, [
-                    "error" => "El creador no debe incluirse en la lista de participantes"
-                ], 400);
-            }
-
-            if (count($newParticipants) !== count(array_unique($newParticipants))) {
-                return $this->jsonResponse($response, [
-                    "error" => "No se permiten participantes duplicados"
-                ], 400);
             }
 
             $conflicts = [];
@@ -129,7 +132,7 @@ class BookingParticipantsController {
 
         } catch (\Exception $e) {
             return $this->jsonResponse($response, [
-                "error" => "Error al actualizar participantes: " . $e->getMessage()
+                "error" => "Error al actualizar participantes"
             ], 500);
         }
     }
