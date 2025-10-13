@@ -19,7 +19,7 @@ class CourtController {
         return $response->withHeader('Content-Type', 'application/json')->withStatus($status);
     }
 
-    public function createCourt(Request $request, Response $response) {
+    public function createCourt(Request $request, Response $response): Response {
         try {
             if (!$request->getAttribute('is_admin')) {
                 return $this->jsonResponse($response, ["error" => "No autorizado"], 403);
@@ -48,21 +48,21 @@ class CourtController {
             }
 
         } catch (PDOException $e) {
-            return $this->jsonResponse($response, ["error" => "Error de base de datos: " . $e->getMessage()], 500);
+            return $this->jsonResponse($response, ["error" => "Error de base de datos"], 500);
         }
     }
 
     public function updateCourt(Request $request, Response $response, array $args) {
         try {
+            if (!$request->getAttribute('is_admin')) {
+                return $this->jsonResponse($response, ["error" => "No autorizado para esta acción"], 403);
+            }
+
             $courtId = $args['id'];
             $court = new Court($this->db);
 
             if (!$court->findById($courtId)) {
                 return $this->jsonResponse($response, ["error" => "Cancha no encontrada"], 404);
-            }
-
-            if (!$request->getAttribute('is_admin')) {
-                return $this->jsonResponse($response, ["error" => "No autorizado para esta acción"], 403);
             }
 
             $data = $request->getParsedBody();
@@ -72,11 +72,19 @@ class CourtController {
             if (empty($name) && empty($description)) {
                 return $this->jsonResponse($response, ["error" => "Se requiere al menos un campo (nombre o descripción) para actualizar"], 400);
             }
+
+
+            if (!empty($name)) {
+                $existingCourt = $court->findByName($name);
+                if ($existingCourt && $existingCourt['id'] != $courtId) {
+                    return $this->jsonResponse($response, ["error" => "El nombre de la cancha ya está en uso"], 409);
+                }
+            }
             $updated = $court->update($courtId, $name, $description);
             if ($updated) {
                 return $this->jsonResponse($response, ["message" => "Cancha actualizada exitosamente"], 200);
             } else {
-                return $this->jsonResponse($response, ["error" => "No se pudo actualizar la cancha o no hubo cambios"], 400);
+                return $this->jsonResponse($response, ["message" => "No se realizaron cambios"], 200);
             }
 
         } catch (PDOException $e) {
@@ -86,15 +94,15 @@ class CourtController {
 
     public function deleteCourt(Request $request, Response $response, array $args): Response {
         try {
+            
+            if (!$request->getAttribute('is_admin')) {
+                return $this->jsonResponse($response, ["error" => "No autorizado para esta acción"], 403);
+            }
             $courtId = $args['id'];
             $court = new Court($this->db);
 
             if (!$court->findById($courtId)) {
                 return $this->jsonResponse($response, ["error" => "Cancha no encontrada"], 404);
-            }
-
-            if (!$request->getAttribute('is_admin')) {
-                return $this->jsonResponse($response, ["error" => "No autorizado para esta acción"], 403);
             }
 
             if ($court->hasBookings($courtId)) {
@@ -110,17 +118,6 @@ class CourtController {
             return $this->jsonResponse($response, ["error" => "Error de base de datos: " . $e->getMessage()], 500);
         }
     }
-
-    public function getAllCourts(Request $request, Response $response): Response {
-        try {
-            $court = new Court($this->db);
-            $courts = $court->getAll();
-            return $this->jsonResponse($response, $courts, 200);
-        } catch (PDOException $e) {
-            return $this->jsonResponse($response, ["error" => "Error al obtener las canchas"], 500);
-        }
-    }
-
     public function getCourtById(Request $request, Response $response, array $args): Response {
         try {
             $courtId = $args['id'];
