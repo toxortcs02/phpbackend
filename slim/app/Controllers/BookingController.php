@@ -204,7 +204,7 @@ class BookingController {
     public function list(Request $request, Response $response): Response {
         try {
             $params = $request->getQueryParams();
-            $date = $params['date'] ?? null;
+            $date = $params['date'] ?? date('Y-m-d');
 
             if (!$date) {
                 return $this->jsonResponse($response, ["error" => "El parámetro 'date' es requerido (formato: Y-m-d)"], 400);

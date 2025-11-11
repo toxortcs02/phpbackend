@@ -1,0 +1,350 @@
+openapi: 3.0.3
+info:
+  title: API de Reservas de Canchas
+  version: 1.0.0
+  description: >
+    API para gestión de usuarios, canchas y reservas.
+    Autenticación mediante token **Bearer** en encabezado `Authorization: Bearer {token}`.
+servers:
+  - url: http://localhost:8000/api
+    description: Servidor local de desarrollo
+
+tags:
+  - name: Usuarios
+    description: Endpoints relacionados con usuarios.
+  - name: Canchas
+    description: Endpoints de gestión de canchas.
+  - name: Reservas
+    description: Endpoints de creación y gestión de reservas.
+  - name: Participantes
+    description: Endpoints para actualizar los participantes de una reserva.
+
+paths:
+  /user:
+    post:
+      tags: [Usuarios]
+      summary: Registro de usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, first_name, last_name]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+      responses:
+        '201':
+          description: Usuario registrado exitosamente
+        '400':
+          description: Datos inválidos o usuario ya existente
+
+  /login:
+    post:
+      tags: [Usuarios]
+      summary: Inicio de sesión
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Inicio de sesión exitoso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: Token Bearer para autenticación
+        '401':
+          description: Credenciales inválidas
+
+  /users:
+    get:
+      tags: [Usuarios]
+      summary: Buscar usuarios por nombre o email
+      parameters:
+        - name: query
+          in: query
+          description: Texto a buscar
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista de usuarios encontrados
+
+  /user/{id}:
+    get:
+      tags: [Usuarios]
+      summary: Obtener perfil de usuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Perfil del usuario
+        '404':
+          description: Usuario no encontrado
+
+    patch:
+      tags: [Usuarios]
+      summary: Actualizar perfil de usuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Usuario actualizado
+        '400':
+          description: Error en la actualización
+
+    delete:
+      tags: [Usuarios]
+      summary: Eliminar usuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Usuario eliminado
+        '404':
+          description: Usuario no encontrado
+
+  /user/logout:
+    post:
+      tags: [Usuarios]
+      summary: Cerrar sesión
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sesión cerrada correctamente
+
+  /court:
+    post:
+      tags: [Canchas]
+      summary: Crear cancha
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, description]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Cancha creada exitosamente
+        '403':
+          description: No autorizado (requiere admin)
+
+  /court/{id}:
+    get:
+      tags: [Canchas]
+      summary: Obtener cancha por ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Información de la cancha
+        '404':
+          description: Cancha no encontrada
+
+    put:
+      tags: [Canchas]
+      summary: Actualizar cancha (solo admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Cancha actualizada
+        '403':
+          description: No autorizado
+
+    delete:
+      tags: [Canchas]
+      summary: Eliminar cancha (solo admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Cancha eliminada
+        '403':
+          description: No autorizado
+
+  /booking:
+    get:
+      tags: [Reservas]
+      summary: Listar reservas del día (público)
+      responses:
+        '200':
+          description: Lista de reservas del día
+
+    post:
+      tags: [Reservas]
+      summary: Crear nueva reserva
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [court_id, booking_datetime, duration_blocks, participants]
+              properties:
+                court_id:
+                  type: integer
+                booking_datetime:
+                  type: string
+                  format: date-time
+                duration_blocks:
+                  type: integer
+                participants:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        '201':
+          description: Reserva creada exitosamente
+        '400':
+          description: Error en la creación
+
+  /booking/{id}:
+    delete:
+      tags: [Reservas]
+      summary: Eliminar reserva (creador o admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Reserva eliminada
+        '403':
+          description: No autorizado
+
+  /booking_participants/{id}:
+    put:
+      tags: [Participantes]
+      summary: Actualizar participantes de una reserva
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                participants:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        '200':
+          description: Participantes actualizados
+        '400':
+          description: Error al actualizar
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

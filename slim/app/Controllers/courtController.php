@@ -132,4 +132,14 @@ class CourtController {
             return $this->jsonResponse($response, ["error" => "Error al obtener la cancha"], 500);
         }
     }
+
+    public function getAllCourts(Request $request, Response $response): Response {
+        try {
+            $court = new Court($this->db);
+            $courts = $court->getAllCourts();
+            return $this->jsonResponse($response, $courts, 200);
+        } catch (PDOException $e) {
+            return $this->jsonResponse($response, ["error" => "Error al obtener las canchas"], 500);
+        }
+    }
 }

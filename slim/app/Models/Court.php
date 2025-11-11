@@ -74,4 +74,9 @@ class Court {
         $stmt->execute();
         return $stmt->fetchColumn() !== false;
     }
+    public function getAllCourts() {
+        $stmt = $this->conn->prepare("SELECT * FROM {$this->table}");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

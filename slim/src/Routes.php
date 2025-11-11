@@ -81,6 +81,9 @@ return function (App $app) {
         // Obtener información de una cancha específica. 
         $group->get('/court/{id}', [$courtController, 'getCourtById'])
               ->add($authMiddleware);
+        // Obtener todas las canchas
+        $group->get('/court', [$courtController, 'getAllCourts']);
+
 
     });
 
