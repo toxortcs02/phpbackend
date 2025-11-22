@@ -229,4 +229,5 @@ class BookingController {
             return $this->jsonResponse($response, ["error" => "Error del servidor"], 500);
         }
     }
+    
 }

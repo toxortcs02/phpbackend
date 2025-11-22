@@ -104,6 +104,9 @@ class CourtController {
             if (!$court->findById($courtId)) {
                 return $this->jsonResponse($response, ["error" => "Cancha no encontrada"], 404);
             }
+            //eliminar reservas vencidas NUEVO
+            $court->deleteOldBookings($courtId);
+
 
             if ($court->hasBookings($courtId)) {
                 return $this->jsonResponse($response, ["error" => "No se puede eliminar una cancha con reservas activas"], 409);
@@ -130,6 +133,19 @@ class CourtController {
             }
         } catch (PDOException $e) {
             return $this->jsonResponse($response, ["error" => "Error al obtener la cancha"], 500);
+        }
+    }
+    public function getCourtBookings(Request $request, Response $response, array $args): Response {
+        try {
+            $courtId = $args['id'];
+            $court = new Court($this->db);
+            if (!$court->findById($courtId)) {
+                return $this->jsonResponse($response, ["error" => "Cancha no encontrada"], 404);
+            }
+            $bookings = $court->getBookingsByCourtId($courtId);
+            return $this->jsonResponse($response, $bookings, 200);
+        } catch (PDOException $e) {
+            return $this->jsonResponse($response, ["error" => "Error al obtener las reservas de la cancha"], 500);
         }
     }
 

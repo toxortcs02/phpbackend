@@ -151,4 +151,5 @@ class Booking {
         
         return $stmt->fetch() !== false;
     }
+
 }

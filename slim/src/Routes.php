@@ -83,6 +83,7 @@ return function (App $app) {
               ->add($authMiddleware);
         // Obtener todas las canchas
         $group->get('/court', [$courtController, 'getAllCourts']);
+        $group->get('/court/{id}/bookings', [$courtController, 'getCourtBookings']);
 
 
     });
@@ -101,6 +102,7 @@ return function (App $app) {
 
         // Listar reservas del día (público)
         $group->get('/booking', [$bookingController, 'list']);
+        
     });
 
     $app->group('/api', function ($group) use ($bookingParticipantsController, $authMiddleware) {
