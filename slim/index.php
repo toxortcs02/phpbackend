@@ -24,7 +24,7 @@ $app->add(function ($request, $handler) {
 });
 
 
-$routes = require __DIR__ . '/src/routes.php';
+$routes = require __DIR__ . '/src/Routes.php';
 $routes($app);
 
 $app->run();
