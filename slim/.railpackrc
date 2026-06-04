@@ -1,3 +1,5 @@
 {
-  "phpExtensions": ["pdo_mysql"]
+  "php": {
+    "extensions": ["pdo_mysql"]
+  }
 }
