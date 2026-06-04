@@ -1,0 +1,3 @@
+{
+  "phpExtensions": ["pdo_mysql"]
+}

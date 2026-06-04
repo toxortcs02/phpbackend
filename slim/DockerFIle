@@ -4,4 +4,4 @@ RUN install-php-extensions pdo pdo_mysql
 
 COPY . /app
 
-WORKDIR /app
+WORKDIR /app    
