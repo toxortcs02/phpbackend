@@ -54,7 +54,7 @@ class User {
             $stmt->bindParam(':is_admin', $this->is_admin, PDO::PARAM_INT);
 
             if ($stmt->execute()) {
-                $this->id = $this->conn->lastInsertId();
+                $this->id = $this->conn->lastInsertId('users_id_seq');
                 return $this->id;
             }
             return false;
@@ -128,7 +128,7 @@ class User {
         $likeTerm = '%' . $searchTerm . '%';
         $stmt = $this->conn->prepare("
             SELECT id, email, first_name, last_name FROM users 
-            WHERE is_admin = 0 AND (email LIKE :term OR first_name LIKE :term OR last_name LIKE :term)
+            WHERE is_admin = 0 AND (email ILIKE :term OR first_name ILIKE :term OR last_name ILIKE :term)
         ");
         $stmt->bindParam(':term', $likeTerm, PDO::PARAM_STR);
         $stmt->execute();

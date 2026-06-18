@@ -3,7 +3,7 @@
         "slim/slim": "4.*",
         "slim/psr7": "^1.7",
         "ext-pdo": "*",
-        "ext-pdo_mysql": "*"
+        "ext-pdo_pgsql": "*"
     },
     "autoload": {
         "psr-4": {

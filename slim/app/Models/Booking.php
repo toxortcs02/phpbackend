@@ -33,7 +33,7 @@ class Booking {
         $stmt->bindParam(':duration_blocks', $this->duration_blocks, PDO::PARAM_INT);
         
         if ($stmt->execute()) {
-            $this->id = $this->conn->lastInsertId();
+            $this->id = $this->conn->lastInsertId('bookings_id_seq');
             return true;
         }
         return false;
@@ -44,12 +44,12 @@ class Booking {
         $end = clone $start;
         $end->modify('+' . ($durationBlocks * 30) . ' minutes');
         
-        $query = "SELECT COUNT(*) as count 
-                 FROM {$this->table} 
-                 WHERE court_id = :court_id 
+        $query = "SELECT COUNT(*) as count
+                 FROM {$this->table}
+                 WHERE court_id = :court_id
                  AND (
-                     (booking_datetime < :end_time 
-                      AND DATE_ADD(booking_datetime, INTERVAL (duration_blocks * 30) MINUTE) > :start_time)
+                     (booking_datetime < :end_time
+                      AND booking_datetime + (duration_blocks * 30) * INTERVAL '1 minute' > :start_time)
                  )";
         
         $stmt = $this->conn->prepare($query);
@@ -72,10 +72,10 @@ class Booking {
                  FROM {$this->table} b
                  INNER JOIN booking_participants bp ON b.id = bp.booking_id
                  INNER JOIN courts c ON b.court_id = c.id
-                 WHERE bp.user_id = :user_id 
+                 WHERE bp.user_id = :user_id
                  AND (
-                     (b.booking_datetime < :end_time 
-                      AND DATE_ADD(b.booking_datetime, INTERVAL (b.duration_blocks * 30) MINUTE) > :start_time)
+                     (b.booking_datetime < :end_time
+                      AND b.booking_datetime + (b.duration_blocks * 30) * INTERVAL '1 minute' > :start_time)
                  )";
         
         if ($excludeBookingId) {
@@ -115,7 +115,7 @@ class Booking {
                  FROM {$this->table} b
                  INNER JOIN courts c ON b.court_id = c.id
                  INNER JOIN users u ON b.created_by = u.id
-                 WHERE DATE(b.booking_datetime) = :date
+                 WHERE b.booking_datetime::date = :date::date
                  ORDER BY c.name ASC, b.booking_datetime ASC";
         
         $stmt = $this->conn->prepare($query);

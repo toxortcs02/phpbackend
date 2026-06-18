@@ -33,7 +33,7 @@ class Court {
         $stmt->bindParam(':description', $description);
 
         if ($stmt->execute()) {
-            return $this->conn->lastInsertId();
+            return $this->conn->lastInsertId('courts_id_seq');
         }
         return false;
     }
@@ -88,8 +88,8 @@ class Court {
     }
     public function deleteOldBookings($court_id) {
         // 1. Obtener reservas vencidas
-        $query = "SELECT id FROM bookings 
-                WHERE DATE_ADD(booking_datetime, INTERVAL (duration_blocks * 30) MINUTE) < :current_datetime 
+        $query = "SELECT id FROM bookings
+                WHERE booking_datetime + (duration_blocks * 30) * INTERVAL '1 minute' < :current_datetime
                 AND court_id = :court_id";
         
         $stmt = $this->conn->prepare($query);

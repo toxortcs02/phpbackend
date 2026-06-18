@@ -28,7 +28,7 @@ class BookingParticipant {
         $stmt->bindParam(':user_id', $this->user_id, PDO::PARAM_INT);
         
         if ($stmt->execute()) {
-            $this->id = $this->conn->lastInsertId();
+            $this->id = $this->conn->lastInsertId('booking_participants_id_seq');
             return true;
         }
         return false;

@@ -13,18 +13,18 @@ class Database {
     public $conn;
 
     public function __construct() {
-        $this->host     = getenv('MYSQLHOST');
-        $this->db_name  = getenv('MYSQLDATABASE');
-        $this->username = getenv('MYSQLUSER');
-        $this->password = getenv('MYSQLPASSWORD');
-        $this->port     = getenv('MYSQLPORT') ?: '3306';
+        $this->host     = getenv('PGHOST');
+        $this->db_name  = getenv('PGDATABASE');
+        $this->username = getenv('PGUSER');
+        $this->password = getenv('PGPASSWORD');
+        $this->port     = getenv('PGPORT') ?: '5432';
     }
 
     public function getConnection() {
         $this->conn = null;
         try {
             $this->conn = new PDO(
-                "mysql:host={$this->host};port={$this->port};dbname={$this->db_name};charset=utf8",
+                "pgsql:host={$this->host};port={$this->port};dbname={$this->db_name}",
                 $this->username,
                 $this->password
             );
