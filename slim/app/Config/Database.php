@@ -13,11 +13,22 @@ class Database {
     public $conn;
 
     public function __construct() {
-        $this->host     = getenv('PGHOST');
-        $this->db_name  = getenv('PGDATABASE');
-        $this->username = getenv('PGUSER');
-        $this->password = getenv('PGPASSWORD');
-        $this->port     = getenv('PGPORT') ?: '5432';
+        $databaseUrl = getenv('DATABASE_URL');
+
+        if ($databaseUrl) {
+            $parsed          = parse_url($databaseUrl);
+            $this->host      = $parsed['host'] ?? '';
+            $this->db_name   = ltrim($parsed['path'] ?? '', '/');
+            $this->username  = $parsed['user'] ?? '';
+            $this->password  = $parsed['pass'] ?? '';
+            $this->port      = $parsed['port'] ?? '5432';
+        } else {
+            $this->host     = getenv('PGHOST');
+            $this->db_name  = getenv('PGDATABASE');
+            $this->username = getenv('PGUSER');
+            $this->password = getenv('PGPASSWORD');
+            $this->port     = getenv('PGPORT') ?: '5432';
+        }
     }
 
     public function getConnection() {
